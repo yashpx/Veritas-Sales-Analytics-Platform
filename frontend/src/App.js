@@ -22,6 +22,7 @@ function App() {
           {/* Protected routes */}
           <Route element={<PrivateRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
+            {/* Add more protected routes here */}
           </Route>
         </Routes>
       </div>

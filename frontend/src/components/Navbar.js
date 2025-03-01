@@ -32,18 +32,22 @@ const Navbar = () => {
   return (
     <nav className="navbar">
       <div className="container">
-        <Link to="/" className="navbar-brand">Supabase Auth Demo</Link>
+        <Link to="/" className="navbar-brand">
+          <span style={{ color: '#7e22ce', fontWeight: 'bold' }}>Supabase</span> Auth Demo
+        </Link>
         <div className="navbar-links">
           {user ? (
             <>
-              <span className="welcome-text">Welcome, {user.email}</span>
-              <Link to="/dashboard">Dashboard</Link>
+              <span className="welcome-text">
+                Welcome, <span style={{ color: '#7e22ce', fontWeight: 'bold' }}>{user.email}</span>
+              </span>
+              <Link to="/dashboard" style={{ color: '#7e22ce' }}>Dashboard</Link>
               <button onClick={handleLogout} className="logout-btn">Logout</button>
             </>
           ) : (
             <>
-              <Link to="/login">Login</Link>
-              <Link to="/register">Register</Link>
+              <Link to="/login" style={{ color: '#7e22ce' }}>Login</Link>
+              <Link to="/register" style={{ color: '#7e22ce' }}>Register</Link>
             </>
           )}
         </div>

@@ -1,0 +1,68 @@
+.ui-button {
+  cursor: pointer;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  font-weight: 600;
+  transition: background-color 0.3s;
+  color: #fff;
+  width: 100%;
+}
+
+.ui-button.primary {
+  background-color: #7e22ce; /* Purple shade */
+}
+.ui-button.primary:hover {
+  background-color: #5e1999;
+}
+
+.ui-button.secondary {
+  background-color: #bbb;
+}
+.ui-button.secondary:hover {
+  background-color: #999;
+}
+
+.ui-button.danger {
+  background-color: #e3342f;
+}
+.ui-button.danger:hover {
+  background-color: #cc1f1a;
+}
+
+.ui-button:disabled {
+  background-color: #d1d5db;
+  cursor: not-allowed;
+}
+
+.ui-input-container {
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1rem;
+}
+
+.ui-label {
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.ui-input {
+  padding: 0.75rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  outline: none;
+  font-size: 1rem;
+  transition: border 0.2s;
+}
+
+.ui-input:focus {
+  border-color: #7e22ce;
+}
+
+.ui-card {
+  background-color: #fff;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}

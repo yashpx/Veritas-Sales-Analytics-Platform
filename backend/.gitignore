@@ -36,7 +36,7 @@ logs/
 *.log
 
 # Environment variables
-# .env  # Keeping this for demo purposes, but normally it should be gitignored
+.env
 
 # Tests
 .coverage
