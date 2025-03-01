@@ -1,0 +1,156 @@
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.navbar {
+  display: flex;
+  align-items: center;
+  padding: 1rem;
+  background-color: #fff;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.navbar .container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+}
+
+.navbar-brand {
+  font-size: 1.5rem;
+  font-weight: bold;
+  color: #333;
+  text-decoration: none;
+}
+
+.navbar-links {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.navbar-links a {
+  color: #333;
+  text-decoration: none;
+  padding: 0.5rem;
+}
+
+.navbar-links a:hover {
+  color: #4a66f5;
+}
+
+.welcome-text {
+  margin-right: 1rem;
+}
+
+.logout-btn {
+  padding: 0.5rem 1rem;
+  background-color: #f0f0f0;
+  color: #333;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.logout-btn:hover {
+  background-color: #e0e0e0;
+}
+
+.home-content {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.auth-buttons {
+  display: flex;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.login-btn, .register-btn, .dashboard-btn {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background-color: #4a66f5;
+  color: white;
+  text-decoration: none;
+  border-radius: 4px;
+  transition: background-color 0.3s;
+}
+
+.register-btn {
+  background-color: #5cb85c;
+}
+
+.login-btn:hover, .dashboard-btn:hover {
+  background-color: #344bd1;
+}
+
+.register-btn:hover {
+  background-color: #4cae4c;
+}
+
+.about-section {
+  margin-top: 3rem;
+  padding-top: 2rem;
+  border-top: 1px solid #eee;
+}
+
+.about-section ul {
+  margin-top: 1rem;
+  padding-left: 1.5rem;
+}
+
+.about-section li {
+  margin-bottom: 0.5rem;
+}
+
+.dashboard {
+  max-width: 800px;
+  margin: 2rem auto;
+  padding: 2rem;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.user-info {
+  margin: 2rem 0;
+  padding: 1.5rem;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+.user-info p {
+  margin: 0.5rem 0;
+}
+
+@media (max-width: 768px) {
+  .navbar {
+    padding: 1rem 0.5rem;
+  }
+  
+  .navbar-brand {
+    font-size: 1.2rem;
+  }
+  
+  .home-content, .dashboard, .auth-container {
+    margin: 1rem;
+    padding: 1.5rem;
+  }
+  
+  .auth-buttons {
+    flex-direction: column;
+  }
+  
+  .login-btn, .register-btn, .dashboard-btn {
+    text-align: center;
+  }
+}
