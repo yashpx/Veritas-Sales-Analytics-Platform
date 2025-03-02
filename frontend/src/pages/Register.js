@@ -5,14 +5,16 @@ import RegisterForm from '../components/auth/RegisterForm';
 
 const Register = () => {
   return (
-    <AuthLayout heading="Create your account">
+    <AuthLayout 
+      heading="Create your account" 
+      illustrationSrc="/assets/Welcome.mp4"
+      video={true}
+    >
       <RegisterForm />
-      <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-        <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+      <div className="auth-switch">
+        <p>
           Already have an account?{' '}
-          <Link to="/login" style={{ color: '#7e22ce', fontWeight: 'medium' }}>
-            Sign in here
-          </Link>
+          <Link to="/login">Sign in</Link>
         </p>
       </div>
     </AuthLayout>

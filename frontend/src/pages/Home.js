@@ -1,91 +1,121 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import Card from '../components/ui/Card';
+import Button from '../components/ui/Button';
 
 const Home = () => {
   const { user } = useAuth();
 
   return (
-    <div className="container">
-      <div style={{ maxWidth: '800px', margin: '3rem auto', padding: '0 1rem' }}>
-        <Card>
-          <div style={{ textAlign: 'center', padding: '1rem 0 2rem' }}>
-            <h1 style={{ fontSize: '2.25rem', marginBottom: '1rem', color: '#1f2937' }}>
-              Welcome to <span style={{ color: '#7e22ce' }}>Supabase Auth Demo</span>
-            </h1>
-            <p style={{ fontSize: '1.125rem', color: '#4b5563', maxWidth: '600px', margin: '0 auto' }}>
-              A secure, modern authentication system powered by Supabase and React
-            </p>
-          </div>
-          
-          {user ? (
-            <div style={{ textAlign: 'center', marginTop: '1rem' }}>
-              <p style={{ marginBottom: '1.5rem' }}>
-                You are currently signed in as <strong style={{ color: '#7e22ce' }}>{user.email}</strong>
-              </p>
-              <Link
-                to="/dashboard"
-                style={{
-                  display: 'inline-block',
-                  backgroundColor: '#7e22ce',
-                  color: 'white',
-                  padding: '0.75rem 1.5rem',
-                  borderRadius: '0.375rem',
-                  textDecoration: 'none',
-                  fontWeight: '500',
-                }}
-              >
-                Go to Dashboard
-              </Link>
-            </div>
-          ) : (
-            <div style={{ textAlign: 'center', marginTop: '1rem' }}>
-              <p style={{ marginBottom: '1.5rem' }}>Get started by signing in or creating a new account</p>
-              <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center' }}>
-                <Link
-                  to="/login"
-                  style={{
-                    backgroundColor: '#7e22ce',
-                    color: 'white',
-                    padding: '0.75rem 1.5rem',
-                    borderRadius: '0.375rem',
-                    textDecoration: 'none',
-                    fontWeight: '500',
-                  }}
-                >
-                  Sign In
-                </Link>
-                <Link
-                  to="/register"
-                  style={{
-                    backgroundColor: '#ffffff',
-                    color: '#7e22ce',
-                    border: '1px solid #7e22ce',
-                    padding: '0.75rem 1.5rem',
-                    borderRadius: '0.375rem',
-                    textDecoration: 'none',
-                    fontWeight: '500',
-                  }}
-                >
-                  Register
-                </Link>
-              </div>
-            </div>
-          )}
-          
-          <div style={{ marginTop: '3rem', borderTop: '1px solid #e5e7eb', paddingTop: '2rem' }}>
-            <h2 style={{ fontSize: '1.5rem', marginBottom: '1rem', color: '#1f2937' }}>Features</h2>
-            <ul style={{ paddingLeft: '1.5rem' }}>
-              <li style={{ marginBottom: '0.5rem' }}>User registration with email and password</li>
-              <li style={{ marginBottom: '0.5rem' }}>User authentication and session management</li>
-              <li style={{ marginBottom: '0.5rem' }}>Protected routes for authenticated users</li>
-              <li style={{ marginBottom: '0.5rem' }}>User profile and information display</li>
-              <li style={{ marginBottom: '0.5rem' }}>Responsive design that works on all devices</li>
-            </ul>
-          </div>
-        </Card>
+    <div className="welcome-container">
+      {/* Left side content (30% width) */}
+      <div className="welcome-content">
+        <div className="welcome-logo">
+          <img src="/assets/logo_dark.png" alt="AuthSystem Logo" />
+          <span>Veritas</span>
+        </div>
+        
+        <h1>Transform the way you capture every conversation</h1>
+        
+        <p>
+        Veritas ensures your vital moments are secure, searchable, and always at your fingertips.
+        </p>
+        
+        {user ? (
+          <Link to="/dashboard">
+            <Button>Go to Dashboard</Button>
+          </Link>
+        ) : (
+          <Link to="/login">
+            <Button>Get Started</Button>
+          </Link>
+        )}
       </div>
+      
+      {/* Right side video (70% width) */}
+      <div className="welcome-video">
+        <video autoPlay loop muted>
+          <source src="/assets/Welcome.mp4" type="video/mp4" />
+          Your browser does not support the video tag.
+        </video>
+      </div>
+      
+      {/* CSS Styles */}
+      <style jsx="true">{`
+        .welcome-container {
+          display: flex;
+          min-height: 100vh;
+          overflow: hidden;
+        }
+        
+        .welcome-content {
+          flex: 0 0 30%;
+          background-color: var(--dark-bg);
+          color: var(--light-text);
+          padding: 4rem 2rem;
+          display: flex;
+          flex-direction: column;
+          justify-content: center;
+        }
+        
+        .welcome-logo {
+          display: flex;
+          align-items: center;
+          gap: 0.75rem;
+          margin-bottom: 3rem;
+        }
+        
+        .welcome-logo img {
+          height: 32px;
+          width: auto;
+        }
+        
+        .welcome-logo span {
+          font-weight: 600;
+          font-size: 1.5rem;
+        }
+        
+        .welcome-content h1 {
+          font-size: 2.25rem;
+          font-weight: 700;
+          margin-bottom: 1.5rem;
+          line-height: 1.2;
+        }
+        
+        .welcome-content p {
+          margin-bottom: 2.5rem;
+          font-size: 1.125rem;
+          color: #d1d5db;
+          line-height: 1.6;
+        }
+        
+        .welcome-video {
+          flex: 0 0 70%;
+          overflow: hidden;
+        }
+        
+        .welcome-video video {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+        
+        @media (max-width: 768px) {
+          .welcome-container {
+            flex-direction: column;
+          }
+          
+          .welcome-content {
+            flex: 0 0 100%;
+            padding: 2rem;
+          }
+          
+          .welcome-video {
+            flex: 0 0 100%;
+            height: 50vh;
+          }
+        }
+      `}</style>
     </div>
   );
 };

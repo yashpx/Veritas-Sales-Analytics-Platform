@@ -5,14 +5,15 @@ import LoginForm from '../components/auth/LoginForm';
 
 const Login = () => {
   return (
-    <AuthLayout heading="Sign in to your account">
+    <AuthLayout 
+      heading="Welcome back"
+      illustrationSrc="/assets/illustration.png"
+    >
       <LoginForm />
-      <div style={{ marginTop: '1.5rem', textAlign: 'center' }}>
-        <p style={{ fontSize: '0.875rem', color: '#6b7280' }}>
+      <div className="auth-switch">
+        <p>
           Don't have an account?{' '}
-          <Link to="/register" style={{ color: '#7e22ce', fontWeight: 'medium' }}>
-            Create one here
-          </Link>
+          <Link to="/register">Create account</Link>
         </p>
       </div>
     </AuthLayout>

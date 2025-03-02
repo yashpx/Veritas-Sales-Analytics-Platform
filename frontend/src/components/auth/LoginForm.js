@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 import supabase from '../../utils/supabaseClient';
@@ -40,12 +40,12 @@ const LoginForm = () => {
 
   return (
     <form onSubmit={handleSubmit}>
-      {error && <div style={{ padding: '0.75rem', backgroundColor: '#fee2e2', color: '#b91c1c', borderRadius: '4px', marginBottom: '1rem' }}>{error}</div>}
+      {error && <div className="error-message">{error}</div>}
       
       <Input
         label="Email Address"
         type="email"
-        placeholder="example@email.com"
+        placeholder="you@example.com"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
@@ -60,17 +60,21 @@ const LoginForm = () => {
         required
       />
       
-      <div style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between' }}>
-        <div>
-          <label style={{ display: 'flex', alignItems: 'center', fontSize: '0.875rem' }}>
-            <input type="checkbox" style={{ marginRight: '0.5rem' }} /> Remember me
-          </label>
-        </div>
-        <div>
-          <a href="/reset-password" style={{ color: '#7e22ce', fontSize: '0.875rem' }}>
-            Forgot password?
-          </a>
-        </div>
+      <div className="checkbox-container">
+        <input type="checkbox" id="remember-me" />
+        <label htmlFor="remember-me">Remember me</label>
+        
+        <Link 
+          to="/reset-password" 
+          style={{ 
+            marginLeft: 'auto', 
+            color: 'var(--primary-color)', 
+            fontSize: '0.875rem', 
+            textDecoration: 'none' 
+          }}
+        >
+          Forgot password?
+        </Link>
       </div>
       
       <Button type="submit" disabled={loading}>

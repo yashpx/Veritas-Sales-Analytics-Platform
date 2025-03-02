@@ -49,14 +49,13 @@ const RegisterForm = () => {
 
   return (
     <form onSubmit={handleSubmit}>
-      {error && <div style={{ padding: '0.75rem', backgroundColor: '#fee2e2', color: '#b91c1c', borderRadius: '4px', marginBottom: '1rem' }}>{error}</div>}
-      
-      {message && <div style={{ padding: '0.75rem', backgroundColor: '#d1fae5', color: '#065f46', borderRadius: '4px', marginBottom: '1rem' }}>{message}</div>}
+      {error && <div className="error-message">{error}</div>}
+      {message && <div className="success-message">{message}</div>}
       
       <Input
         label="Email Address"
         type="email"
-        placeholder="example@email.com"
+        placeholder="you@example.com"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
@@ -65,7 +64,7 @@ const RegisterForm = () => {
       <Input
         label="Password"
         type="password"
-        placeholder="••••••••"
+        placeholder="Create a password"
         value={password}
         onChange={(e) => setPassword(e.target.value)}
         required
@@ -74,16 +73,16 @@ const RegisterForm = () => {
       <Input
         label="Confirm Password"
         type="password"
-        placeholder="••••••••"
+        placeholder="Confirm password"
         value={confirmPassword}
         onChange={(e) => setConfirmPassword(e.target.value)}
         required
       />
       
-      <div style={{ marginBottom: '1rem' }}>
-        <label style={{ display: 'flex', alignItems: 'center', fontSize: '0.875rem' }}>
-          <input type="checkbox" style={{ marginRight: '0.5rem' }} required /> 
-          I agree to the Terms of Service and Privacy Policy
+      <div className="checkbox-container">
+        <input type="checkbox" id="terms" required />
+        <label htmlFor="terms">
+          I agree to the <a href="/terms" style={{ color: 'var(--primary-color)', textDecoration: 'none' }}>Terms of Service</a> and <a href="/privacy" style={{ color: 'var(--primary-color)', textDecoration: 'none' }}>Privacy Policy</a>
         </label>
       </div>
       
