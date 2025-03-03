@@ -6,6 +6,11 @@ This project was bootstrapped with [Create React App](https://github.com/faceboo
 
 In the project directory, you can run:
 
+npm install
+npm install @supabase/supabase-js
+npm install lucide-react
+npm start
+
 ### `npm start`
 
 Runs the app in the development mode.\
