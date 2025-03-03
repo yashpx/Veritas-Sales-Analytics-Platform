@@ -35,5 +35,23 @@
   - Dashboard: Dark sidebar with main content area
 - Assets located in `frontend/public/assets/`
 - Responsive breakpoints at 768px (mobile view)
+- MUI components for UI elements with custom styling
+
+## Project Architecture
+- Authentication system using Supabase
+- Dashboard analytics with Recharts
+- Modular component structure
+- Context API for state management
+- Lazy-loaded routes for performance
+
+## Dashboard Features
+- Main dashboard with KPI cards
+- Sales rep analytics
+- Call tracking and management
+- Customer relationship views
+- Interactive data visualization
+- Notification system
+- User profile management
+- Settings and configuration
 
 This codebase uses Supabase for authentication and data storage.

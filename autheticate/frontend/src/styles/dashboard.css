@@ -1,3 +1,7 @@
+/*
+ * Dashboard-specific styles
+ */
+
 .dashboard-container {
   font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   background-color: #f8fafc;
@@ -415,4 +419,19 @@ td, th {
 /* Pie chart text */
 text tspan {
   font-family: 'Inter', sans-serif;
+}
+
+/* MUI-specific overrides */
+.MuiPaper-root {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
+}
+
+.MuiTableCell-head {
+  font-weight: 600 !important;
+  color: #6c757d !important;
+  font-size: 0.8rem !important;
+}
+
+.MuiTableCell-body {
+  font-size: 0.9rem !important;
 }
