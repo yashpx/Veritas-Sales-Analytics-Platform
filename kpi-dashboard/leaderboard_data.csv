@@ -1,0 +1,11 @@
+salesrep_id,salesrep_name,month,total_calls,successful_calls,revenue_generated,avg_call_duration,customer_satisfaction,new_customers_acquired,conversion_rate,upsell_success_rate
+1,Alice Johnson,January,200,60,12000.5,8,4.6,15,30,12.5
+2,Alice Johnson,February,180,55,11050.75,7,4.5,14,30.6,11.8
+3,Bob Smith,January,150,40,8500,9,4.3,10,26.7,10
+4,Bob Smith,February,140,38,8200.25,8,4.2,9,27.1,9.5
+5,Charlie Brown,January,180,50,9500.3,10,4.4,12,27.8,10.2
+6,Charlie Brown,February,190,60,11200.4,9,4.6,14,31.6,12
+7,David Lee,January,170,48,9100.5,7,4.3,13,28.2,10.5
+8,David Lee,February,160,45,8700.25,8,4.2,12,28.1,9.8
+9,Sophia Martinez,January,210,70,13000,9,4.7,18,33.3,13
+10,Sophia Martinez,February,220,75,14000.5,10,4.8,20,34.1,14.5

@@ -1,0 +1,18 @@
+body {
+    background-color: #f5f7fb;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  
+  .MuiPaper-root {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
+  }
+  
+  .MuiTableCell-head {
+    font-weight: 600 !important;
+    color: #6c757d !important;
+    font-size: 0.8rem !important;
+  }
+  
+  .MuiTableCell-body {
+    font-size: 0.9rem !important;
+  }

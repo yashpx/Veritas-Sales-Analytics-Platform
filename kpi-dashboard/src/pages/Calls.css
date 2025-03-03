@@ -1,0 +1,368 @@
+/* Calls.css */
+.calls-container {
+    width: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+    color: #333;
+  }
+  
+  /* Header styling */
+  .calls-header {
+    display: flex;
+    padding: 15px 20px;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e1e4e8;
+  }
+  
+  .header-item {
+    flex: 1;
+    font-size: 14px;
+    font-weight: 500;
+    color: #555;
+  }
+  
+  .sortable {
+    cursor: pointer;
+    position: relative;
+  }
+  
+  .sortable::after {
+    content: '⌃';
+    transform: rotate(180deg);
+    display: inline-block;
+    margin-left: 5px;
+    font-size: 12px;
+  }
+  
+  /* Contacts section */
+  .contacts-section {
+    padding: 20px;
+  }
+  
+  .contacts-section h1 {
+    font-size: 24px;
+    font-weight: 600;
+    margin: 0;
+  }
+  
+  .contacts-section p {
+    color: #666;
+    margin: 5px 0 20px 0;
+    font-size: 14px;
+  }
+  
+  /* Filter section */
+  .filter-section {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 20px;
+    align-items: center;
+  }
+  
+  .filter-button {
+    padding: 6px 15px;
+    background-color: #f0f2f5;
+    border: 1px solid #e1e4e8;
+    border-radius: 20px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: #555;
+  }
+  
+  .filter-button:hover {
+    background-color: #e1e4e8;
+  }
+  
+  .filter-button.active {
+    background-color: #f0f7ff;
+    color: #0066cc;
+    border-color: #0066cc;
+  }
+  
+  .search-container {
+    margin-left: auto;
+    position: relative;
+    display: flex;
+    align-items: center;
+  }
+  
+  .search-icon {
+    position: absolute;
+    left: 10px;
+    color: #888;
+  }
+  
+  .search-input {
+    padding: 8px 10px 8px 36px;
+    border: 1px solid #e1e4e8;
+    border-radius: 4px;
+    font-size: 14px;
+    width: 250px;
+  }
+  
+  /* Contacts table */
+  .contacts-table {
+    width: 100%;
+    border: 1px solid #e1e4e8;
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  
+  .table-header {
+    display: flex;
+    background-color: #f8f9fa;
+    border-bottom: 1px solid #e1e4e8;
+    font-weight: 500;
+    font-size: 14px;
+    color: #555;
+  }
+  
+  .table-row {
+    display: flex;
+    border-bottom: 1px solid #e1e4e8;
+    transition: background-color 0.2s;
+    cursor: pointer;
+  }
+  
+  .table-row:hover {
+    background-color: #f8f9fa;
+  }
+  
+  .table-row.selected {
+    background-color: #f0f7ff;
+  }
+  
+  .table-cell {
+    padding: 15px;
+    flex: 1;
+    display: flex;
+    align-items: center;
+  }
+  
+  .name-cell {
+    flex: 1.5;
+    font-weight: 500;
+  }
+  
+  .call-cell {
+    gap: 5px;
+    justify-content: flex-end;
+  }
+  
+  .status-badge {
+    display: flex;
+    align-items: center;
+    font-size: 14px;
+    color: #1a8754;
+    font-weight: 500;
+  }
+  
+  .status-badge.client .status-dot {
+    background-color: #1a8754;
+  }
+  
+  .status-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
+  }
+  
+  .call-button {
+    background-color: white;
+    border: 1px solid #e1e4e8;
+    border-radius: 4px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #555;
+  }
+  
+  .call-button:hover {
+    background-color: #f0f2f5;
+  }
+  
+  .options-button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    color: #555;
+  }
+  
+  .dots {
+    font-weight: bold;
+    font-size: 18px;
+  }
+  
+  .loading {
+    padding: 20px;
+    text-align: center;
+    color: #666;
+  }
+  
+  /* Contact detail view */
+  .contact-detail-view {
+    display: flex;
+    height: 100vh;
+  }
+  
+  .contact-list-view {
+    flex: 1.5;
+    overflow-y: auto;
+    border-right: 1px solid #e1e4e8;
+  }
+  
+  .contact-detail-panel {
+    flex: 1;
+    padding: 20px;
+    background-color: #f8f9fa;
+    overflow-y: auto;
+  }
+  
+  .contact-detail-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 20px;
+  }
+  
+  .back-button, .edit-button {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    color: #0066cc;
+    padding: 5px;
+  }
+  
+  .edit-button {
+    color: #333;
+  }
+  
+  .contact-profile {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  .contact-profile h2 {
+    font-size: 24px;
+    font-weight: 500;
+    margin: 10px 0;
+  }
+  
+  .profile-badge {
+    display: flex;
+    align-items: center;
+    padding: 4px 10px;
+    background-color: #e8f5e9;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #1a8754;
+  }
+  
+  .contact-actions {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    margin-bottom: 30px;
+  }
+  
+  .action-button {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+  }
+  
+  .phone-action {
+    background-color: #e8f5e9;
+    color: #1a8754;
+  }
+  
+  .email-action {
+    background-color: #e3f2fd;
+    color: #0066cc;
+  }
+  
+  .contact-tabs {
+    display: flex;
+    border-bottom: 1px solid #e1e4e8;
+    margin-bottom: 20px;
+  }
+  
+  .tab-button {
+    padding: 10px 20px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    color: #666;
+  }
+  
+  .tab-button.active {
+    color: #0066cc;
+    border-bottom-color: #0066cc;
+  }
+  
+  .contact-details-section h3 {
+    font-size: 16px;
+    font-weight: 600;
+    margin: 0 0 15px 0;
+    color: #333;
+  }
+  
+  .details-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px 30px;
+    margin-bottom: 30px;
+  }
+  
+  .detail-item {
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .detail-label {
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 5px;
+  }
+  
+  .detail-value {
+    font-size: 14px;
+    color: #333;
+  }
+  
+  .notes-section {
+    margin-top: 20px;
+  }
+  
+  .notes-content {
+    background-color: white;
+    border: 1px solid #e1e4e8;
+    border-radius: 4px;
+    padding: 15px;
+    font-size: 14px;
+    line-height: 1.5;
+    white-space: pre-line;
+  }

@@ -1,0 +1,19 @@
+product_name,month,total_units_sold,avg_price_per_unit,total_revenue,churn_rate,rating,customer_feedback_count,subscription_type,retention_rate
+SaaS CRM,January,120,49.99,5998.8,5.2,4.7,150,Pro,85.3
+SaaS CRM,February,135,49.99,6748.65,4.8,4.8,160,Pro,87.1
+Email Automation,January,100,39.99,3999.0,6.0,4.6,120,Basic,80.5
+Email Automation,February,90,39.99,3599.1,6.2,4.5,110,Basic,78.9
+Marketing Suite,January,80,59.99,4799.2,4.5,4.4,100,Enterprise,90.2
+Marketing Suite,February,85,59.99,5099.15,4.2,4.5,105,Enterprise,91.0
+AI Analytics,January,60,89.99,5399.4,3.8,4.9,80,Pro,92.5
+AI Analytics,February,75,89.99,6749.25,3.5,4.8,95,Pro,93.4
+Cloud Storage,January,50,19.99,999.5,7.1,4.2,60,Basic,75.0
+Cloud Storage,February,55,19.99,1099.45,6.9,4.3,65,Basic,77.2
+Cybersecurity Suite,January,100,99.99,9999.0,3.5,4.8,90,Enterprise,95.0
+Cybersecurity Suite,February,120,99.99,11998.8,3.2,4.9,100,Enterprise,96.3
+Collaboration Tool,January,130,29.99,3898.7,5.5,4.6,130,Pro,84.2
+Collaboration Tool,February,140,29.99,4198.6,5.1,4.7,140,Pro,85.5
+Cloud Security,January,95,79.99,7599.05,4.3,4.7,85,Enterprise,91.2
+Cloud Security,February,100,79.99,7999.0,4.0,4.8,90,Enterprise,92.0
+Workflow Automation,January,110,69.99,7698.9,4.8,4.6,100,Enterprise,89.5
+Workflow Automation,February,125,69.99,8748.75,4.4,4.7,110,Enterprise,90.8
