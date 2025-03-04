@@ -57,6 +57,31 @@ const CallTranscription = () => {
   const [existingTranscription, setExistingTranscription] = useState(false);
   const [showTranscriptionUpload, setShowTranscriptionUpload] = useState(false);
   const [showAudioUpload, setShowAudioUpload] = useState(false);
+
+  // Computed state to check if we have a valid transcription
+  const hasValidTranscription = diarizedTranscription && 
+    Array.isArray(diarizedTranscription) && 
+    diarizedTranscription.length > 0;
+  
+  // Flag to determine when to show the Transcribe button
+  const showTranscribeButton = audioFile && !hasValidTranscription && !loading;
+  
+  // Debug logging for component state
+  useEffect(() => {
+    console.log("Component state:", {
+      audioFile: !!audioFile,
+      audioUrl: !!audioUrl,
+      diarizedTranscription: diarizedTranscription ? 
+        (Array.isArray(diarizedTranscription) ? `Array[${diarizedTranscription.length}]` : typeof diarizedTranscription) 
+        : null,
+      hasValidTranscription,
+      showTranscribeButton,
+      loading,
+      showAudioUpload,
+      existingTranscription,
+      showTranscriptionUpload
+    });
+  }, [audioFile, audioUrl, diarizedTranscription, hasValidTranscription, showTranscribeButton, loading, showAudioUpload, existingTranscription, showTranscriptionUpload]);
   
   // Initialize - fetch call data and existing transcription if call ID is available
   useEffect(() => {
@@ -69,6 +94,7 @@ const CallTranscription = () => {
       
       try {
         setLoading(true);
+        setProcessingStep('Loading call data...');
         
         // If we don't have the call data, fetch it
         if (!callData) {
@@ -76,21 +102,52 @@ const CallTranscription = () => {
           setCallData(fetchedCall);
         }
         
-        // Check for existing transcription
+        // Check for transcription metadata first (indicates a transcription exists in database)
+        const transcriptionMetadata = localStorage.getItem(`call_${callId}_transcription_metadata`);
+        let hasTranscriptionMetadata = false;
+        
+        if (transcriptionMetadata) {
+          try {
+            const metadata = JSON.parse(transcriptionMetadata);
+            console.log(`Found transcription metadata for call ${callId}:`, metadata);
+            hasTranscriptionMetadata = true;
+          } catch (parseError) {
+            console.error('Error parsing transcription metadata:', parseError);
+          }
+        }
+        
+        // Check for existing transcription content
+        setProcessingStep('Loading transcription...');
         const existingTranscript = await fetchTranscription(callId);
+        
         if (existingTranscript && Array.isArray(existingTranscript) && existingTranscript.length > 0) {
           setDiarizedTranscription(existingTranscript);
           setExistingTranscription(true);
-          setSuccess("Existing transcription loaded");
+          setSuccess("Existing transcription loaded successfully");
           setShowSnackbar(true);
+          // Don't show upload panels if we have a valid transcription
+          setShowTranscriptionUpload(false);
+        } else if (hasTranscriptionMetadata) {
+          // We have metadata indicating a transcription exists, but couldn't load the content
+          setDiarizedTranscription([{
+            speaker: "Speaker 1",
+            text: "This call has been transcribed before. The transcription data will be automatically loaded.",
+            start_time: 0,
+            end_time: 1
+          }]);
+          setExistingTranscription(true);
+          setSuccess("Transcription record found. Loading transcription data...");
+          setShowSnackbar(true);
+          setShowTranscriptionUpload(true); // Show upload option since we need the content
         } else {
-          // Clear any previously loaded transcription and show upload options
+          // No transcription found
           setDiarizedTranscription(null);
           setExistingTranscription(false);
           setShowTranscriptionUpload(true);
         }
         
         // Check for existing audio file using the enhanced getCallAudio function
+        setProcessingStep('Loading audio file...');
         const audioResult = await getCallAudio(callId);
         
         if (audioResult) {
@@ -102,7 +159,14 @@ const CallTranscription = () => {
           
           if (audioResult.file) {
             setAudioFile(audioResult.file);
-            setSuccess(`Audio file loaded from ${audioResult.source}`);
+            
+            // If we have both audio and transcription, set a more comprehensive success message
+            if (existingTranscript && Array.isArray(existingTranscript) && existingTranscript.length > 0) {
+              setSuccess(`Call loaded with audio from ${audioResult.source} and existing transcription`);
+            } else {
+              setSuccess(`Audio file loaded from ${audioResult.source}`);
+            }
+            
             setShowSnackbar(true);
           } else if (audioResult.needsLoading) {
             // We have a reference to a file in project storage but need to load it
@@ -142,18 +206,42 @@ const CallTranscription = () => {
       // Save the audio file to multiple locations
       saveAudioFileMultiple(file);
       
-      // Reset transcription data when a new file is uploaded
+      // Check if there's a transcription flag indicating this call has been transcribed before
+      const transcriptionFlag = localStorage.getItem(`transcription_flag_${callId}`);
+      const hasTranscriptionFlag = transcriptionFlag === 'true';
+      
+      // Handle transcription state based on existing data
       if (existingTranscription) {
-        // Confirm with user whether to replace existing transcription
-        if (window.confirm("A transcription already exists for this call. Do you want to create a new one?")) {
+        // If we have an existing transcription loaded, keep it unless user chooses to replace
+        if (hasTranscriptionFlag && window.confirm("A transcription already exists for this call. Do you want to create a new one?")) {
           setTranscription(null);
           setDiarizedTranscription(null);
           setExistingTranscription(false);
+          
+          // Clear the transcription flag so we don't prompt again
+          localStorage.removeItem(`transcription_flag_${callId}`);
+          localStorage.removeItem(`transcription_${callId}`);
+          
+          // Also clear the metadata
+          localStorage.removeItem(`call_${callId}_transcription_metadata`);
+          
+          // Remove from project transcriptions list
+          const savedTranscriptions = JSON.parse(localStorage.getItem('projectTranscriptions') || '[]');
+          const filteredTranscriptions = savedTranscriptions.filter(record => record.callId !== callId);
+          localStorage.setItem('projectTranscriptions', JSON.stringify(filteredTranscriptions));
+          
+          console.log(`Removed existing transcription data for call ${callId}`);
         }
       }
       
       // Make sure transcription upload panel is not displayed when we have an audio file
-      setShowTranscriptionUpload(false);
+      // unless we have a transcription flag but no actual transcription data
+      if (hasTranscriptionFlag && !existingTranscription) {
+        setShowTranscriptionUpload(true);
+      } else {
+        setShowTranscriptionUpload(false);
+      }
+      
       // Make sure audio upload panel is not displayed
       setShowAudioUpload(false);
       
@@ -164,7 +252,8 @@ const CallTranscription = () => {
         type: file.type,
         audioUrl: Boolean(url),
         existingTranscription: Boolean(existingTranscription),
-        diarizedTranscription: Boolean(diarizedTranscription)
+        diarizedTranscription: Boolean(diarizedTranscription),
+        hasTranscriptionFlag
       });
     }
   };
@@ -175,8 +264,37 @@ const CallTranscription = () => {
       // Use the callsService to save the audio file
       const result = await saveAudioFile(file, callId);
       
+      // Check if we have an existing transcription flag
+      const transcriptionFlag = localStorage.getItem(`transcription_flag_${callId}`);
+      const hasTranscriptionFlag = transcriptionFlag === 'true';
+      
+      // Create metadata for the audio file linked to the call
+      try {
+        // In a real app, you would call an API to update the call record in the database:
+        // await fetch('/api/calls/${callId}/audio', { ... })
+        
+        // For our demo, store in localStorage
+        localStorage.setItem(`call_${callId}_audio_metadata`, JSON.stringify({
+          has_audio: true,
+          filename: file.name,
+          type: file.type,
+          size: file.size,
+          storage_path: result.path || null,
+          timestamp: new Date().toISOString(),
+          transcribed: hasTranscriptionFlag
+        }));
+        
+        console.log(`Call audio metadata saved for call ${callId}`);
+      } catch (metadataError) {
+        console.error('Error saving audio metadata:', metadataError);
+      }
+      
       if (result.success) {
-        setSuccess("Audio file saved to your downloads folder and project storage");
+        if (hasTranscriptionFlag) {
+          setSuccess("Audio file saved to project storage. This call already has a transcription.");
+        } else {
+          setSuccess("Audio file saved to your downloads folder and project storage");
+        }
       } else {
         setSuccess("Audio file saved to your downloads folder for later use");
       }
@@ -251,25 +369,13 @@ const CallTranscription = () => {
       return;
     }
     
-    // This check is now redundant since the button is only shown when there's no transcription
-    // Kept for safety, but should never execute in normal flow
-    if (diarizedTranscription) {
-      console.warn("Process button was clicked when transcription already exists. This shouldn't happen.");
-      if (!window.confirm("Do you want to create a new transcription and replace the existing one?")) {
-        return;
-      }
-    }
-    
     try {
       setLoading(true);
       setError(null);
       
-      // This is now redundant (should never have diarizedTranscription at this point)
-      // but kept for safety and future flexibility
-      if (diarizedTranscription) {
-        setDiarizedTranscription(null);
-        setExistingTranscription(false);
-      }
+      // Explicitly clear any existing transcription
+      setDiarizedTranscription(null);
+      setExistingTranscription(false);
       
       // Make sure the audio file is saved to storage
       setProcessingStep('Saving audio file...');
@@ -524,11 +630,8 @@ const CallTranscription = () => {
             border: '1px solid rgba(0,0,0,0.05)'
           }}
         >
-          {/* Audio upload form is shown when no audio file exists AND either:
-              1. No transcription exists AND showAudioUpload is false, OR
-              2. showAudioUpload is explicitly true 
-           */}
-          {(!audioFile && (!diarizedTranscription || showAudioUpload)) ? (
+          {/* Audio upload form is shown when no audio file exists */}
+          {!audioFile ? (
             // Upload prompt when no file is selected
             <Box 
               sx={{ 
@@ -656,20 +759,6 @@ const CallTranscription = () => {
           ) : (
             // Main content when file is selected or transcription exists
             <>
-              {/* Debug info - keep this in place until the button issue is fixed */}
-              <Box sx={{ position: 'absolute', top: 0, right: 0, p: 1, bgcolor: 'rgba(0,0,0,0.05)', fontSize: '10px', zIndex: 1000 }}>
-                <div>audioFile: {audioFile ? '✓' : '✗'}</div>
-                <div>audioUrl: {audioUrl ? '✓' : '✗'}</div>
-                <div>diarizedTranscription: {diarizedTranscription ? '✓' : '✗'}</div>
-                <div>loading: {loading ? '✓' : '✗'}</div>
-                <div>showAudioUpload: {showAudioUpload ? '✓' : '✗'}</div>
-                <div>existingTranscription: {existingTranscription ? '✓' : '✗'}</div>
-                <div>showTranscriptionUpload: {showTranscriptionUpload ? '✓' : '✗'}</div>
-                <div style={{fontWeight: 'bold', color: 'red'}}>
-                  Transcribe button should show: {(audioFile && !diarizedTranscription && !loading) ? '✓' : '✗'}
-                </div>
-              </Box>
-              
               {/* Top panel with audio player */}
               <Box sx={{ 
                 p: 3, 
@@ -723,26 +812,7 @@ const CallTranscription = () => {
                         </Typography>
                         
                         <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          {/* NEW TRANSCRIBE BUTTON - ALWAYS VISIBLE NEXT TO PLAYER WHEN CONDITIONS MET */}
-                          {audioFile && !diarizedTranscription && !loading && (
-                            <Button
-                              variant="contained"
-                              color="primary"
-                              onClick={handleProcessAudio}
-                              startIcon={<PlayArrowIcon />}
-                              size="small"
-                              sx={{
-                                bgcolor: '#4caf50',
-                                '&:hover': { bgcolor: '#388e3c' },
-                                fontWeight: 600,
-                                boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
-                                borderRadius: '4px',
-                                textTransform: 'none',
-                              }}
-                            >
-                              Transcribe
-                            </Button>
-                          )}
+                          {/* Removed duplicate transcribe button */}
                           
                           <Typography 
                             variant="body2" 
@@ -818,41 +888,8 @@ const CallTranscription = () => {
                         />
                       </Box>
                     </Box>
-                    
-                    {/* Add a banner notice directly below the player when transcription is needed */}
-                    {audioFile && !diarizedTranscription && !loading && (
-                      <Box sx={{ 
-                        mt: 2,
-                        p: 2, 
-                        bgcolor: 'rgba(76, 175, 80, 0.1)', 
-                        border: '1px solid rgba(76, 175, 80, 0.3)',
-                        borderRadius: '4px',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'space-between'
-                      }}>
-                        <Typography variant="body2" sx={{ fontWeight: 500, color: '#1b5e20' }}>
-                          Audio file uploaded successfully. Ready to create a transcription with speaker identification.
-                        </Typography>
-                        <Button
-                          variant="contained"
-                          onClick={handleProcessAudio}
-                          startIcon={<PlayArrowIcon />}
-                          sx={{ 
-                            bgcolor: '#4caf50',
-                            '&:hover': { bgcolor: '#388e3c' },
-                            ml: 2,
-                            textTransform: 'none',
-                            fontWeight: 600
-                          }}
-                        >
-                          Transcribe Now
-                        </Button>
-                      </Box>
-                    )}
                   </>
                 )}
-                
                 </Box>
                 
                 {/* Right side - Processing controls */}
@@ -885,7 +922,7 @@ const CallTranscription = () => {
                   )}
                   
                   {/* Show audio upload button if needed */}
-                  {(!audioFile && showAudioUpload) && (
+                  {showAudioUpload && !audioFile && (
                     <Button
                       component="label"
                       variant="contained"
@@ -915,11 +952,42 @@ const CallTranscription = () => {
                       />
                     </Button>
                   )}
+                </Box>
               </Box>
               
+              {/* FIXED: Add transcribe banner when needed */}
+              {showTranscribeButton && (
+                <Box sx={{ 
+                  p: 2, 
+                  bgcolor: 'rgba(76, 175, 80, 0.1)', 
+                  border: '1px solid rgba(76, 175, 80, 0.3)',
+                  borderRadius: '0',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}>
+                  <Typography variant="body2" sx={{ fontWeight: 500, color: '#1b5e20' }}>
+                    Audio file uploaded successfully. Ready to create a transcription with speaker identification.
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    onClick={handleProcessAudio}
+                    startIcon={<PlayArrowIcon />}
+                    sx={{ 
+                      bgcolor: '#4caf50',
+                      '&:hover': { bgcolor: '#388e3c' },
+                      ml: 2,
+                      textTransform: 'none',
+                      fontWeight: 600
+                    }}
+                  >
+                    Transcribe Now
+                  </Button>
+                </Box>
+              )}
 
               {/* Transcript content area - show transcription if available, otherwise show a message */}
-              {diarizedTranscription ? (
+              {hasValidTranscription ? (
                 <Box sx={{ 
                   flex: 1, 
                   display: 'flex',
@@ -994,191 +1062,208 @@ const CallTranscription = () => {
 
                     {/* Scrollable transcript container */}
                     <Box 
-                      ref={transcriptContainerRef}
-                      sx={{ 
-                        p: 4,
-                        maxHeight: 'calc(100vh - 380px)',
-                        overflowY: 'auto',
-                        scrollBehavior: 'smooth',
-                        paddingBottom: 'calc(30vh)',
-                        paddingTop: 'calc(25vh)',
+                      sx={{
                         position: 'relative',
-                        '&::-webkit-scrollbar': {
-                          width: '8px',
-                        },
-                        '&::-webkit-scrollbar-track': {
-                          backgroundColor: 'rgba(0,0,0,0.05)',
-                          borderRadius: '10px'
-                        },
-                        '&::-webkit-scrollbar-thumb': {
-                          backgroundColor: 'rgba(0,0,0,0.2)',
-                          borderRadius: '10px',
-                          '&:hover': {
-                            backgroundColor: 'rgba(0,0,0,0.3)'
-                          }
-                        },
-                        '&::after': {
-                          content: '""',
-                          position: 'absolute',
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          height: '25vh',
-                          background: 'linear-gradient(to bottom, rgba(255,255,255,0), rgba(255,255,255,0.9) 60%, rgba(255,255,255,1))',
-                          pointerEvents: 'none'
-                        },
-                        '&::before': {
-                          content: '""',
+                        width: '100%',
+                        height: 'calc(100vh - 380px)',
+                        overflow: 'hidden'
+                      }}
+                    >
+                      {/* Top gradient overlay - fixed position */}
+                      <Box 
+                        sx={{
                           position: 'absolute',
                           top: 0,
                           left: 0,
                           right: 0,
-                          height: '25vh',
-                          background: 'linear-gradient(to top, rgba(255,255,255,0), rgba(255,255,255,0.9) 60%, rgba(255,255,255,1))',
+                          height: '100px',
+                          background: 'linear-gradient(to bottom, rgba(255,255,255,1), rgba(255,255,255,0.9) 40%, rgba(255,255,255,0))',
                           pointerEvents: 'none',
-                          zIndex: 2
-                        }
-                      }}
-                  >
-                    {diarizedTranscription.map((segment, index) => (
-                      <Box 
-                        key={index}
-                        ref={isSegmentActive(segment.start_time, segment.end_time) ? activeSegmentRef : null}
-                        sx={{ 
-                          mb: 4,
-                          display: 'flex',
-                          width: '100%'
+                          zIndex: 3
                         }}
-                      >
+                      />
+                      
+                      {/* Bottom gradient overlay - fixed position */}
+                      <Box 
+                        sx={{
+                          position: 'absolute',
+                          bottom: 0,
+                          left: 0,
+                          right: 0,
+                          height: '100px',
+                          background: 'linear-gradient(to top, rgba(255,255,255,1), rgba(255,255,255,0.9) 40%, rgba(255,255,255,0))',
+                          pointerEvents: 'none',
+                          zIndex: 3
+                        }}
+                      />
+                      
+                      {/* Actual scrollable content */}
+                      <Box 
+                        ref={transcriptContainerRef}
+                        sx={{ 
+                          p: 4,
+                          height: '100%',
+                          overflowY: 'auto',
+                          scrollBehavior: 'smooth',
+                          paddingBottom: '120px',
+                          paddingTop: '120px',
+                          '&::-webkit-scrollbar': {
+                            width: '8px',
+                          },
+                          '&::-webkit-scrollbar-track': {
+                            backgroundColor: 'rgba(0,0,0,0.05)',
+                            borderRadius: '10px'
+                          },
+                          '&::-webkit-scrollbar-thumb': {
+                            backgroundColor: 'rgba(0,0,0,0.2)',
+                            borderRadius: '10px',
+                            '&:hover': {
+                              backgroundColor: 'rgba(0,0,0,0.3)'
+                            }
+                          }
+                        }}
+                    >
+                      {diarizedTranscription.map((segment, index) => (
                         <Box 
+                          key={index}
+                          ref={isSegmentActive(segment.start_time, segment.end_time) ? activeSegmentRef : null}
                           sx={{ 
-                            minWidth: '120px', 
-                            mr: 4,
+                            mb: 4,
                             display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'flex-start'
+                            width: '100%'
                           }}
                         >
+                          <Box 
+                            sx={{ 
+                              minWidth: '120px', 
+                              mr: 4,
+                              display: 'flex',
+                              flexDirection: 'column',
+                              alignItems: 'flex-start'
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                bgcolor: segment.speaker === 'Speaker 1' ? 'var(--primary-color)' : '#E57373',
+                                color: 'white',
+                                width: '110px',
+                                textAlign: 'center',
+                                py: 1.2,
+                                borderRadius: '8px',
+                                mb: 1.5,
+                                fontWeight: 600,
+                                fontSize: '0.9rem',
+                                boxShadow: segment.speaker === 'Speaker 1' 
+                                  ? '0 3px 8px rgba(79, 70, 229, 0.25)' 
+                                  : '0 3px 8px rgba(229, 115, 115, 0.25)',
+                                letterSpacing: '0.3px'
+                              }}
+                            >
+                              {segment.speaker}
+                            </Box>
+                            <Button
+                              size="small"
+                              variant="text"
+                              onClick={() => jumpToTime(segment.start_time)}
+                              startIcon={<PlayArrowIcon fontSize="small" />}
+                              sx={{ 
+                                color: 'text.secondary',
+                                fontSize: '0.75rem',
+                                p: 0.5,
+                                minWidth: 0,
+                                borderRadius: '16px',
+                                '&:hover': { 
+                                  bgcolor: 'rgba(0,0,0,0.04)', 
+                                  color: 'var(--primary-color)' 
+                                },
+                                fontFamily: 'monospace',
+                                border: '1px solid rgba(0,0,0,0.08)'
+                              }}
+                            >
+                              {formatTime(segment.start_time)}
+                            </Button>
+                          </Box>
+                          
                           <Box
                             sx={{
-                              bgcolor: segment.speaker === 'Speaker 1' ? 'var(--primary-color)' : '#E57373',
-                              color: 'white',
-                              width: '110px',
-                              textAlign: 'center',
-                              py: 1.2,
-                              borderRadius: '8px',
-                              mb: 1.5,
-                              fontWeight: 600,
-                              fontSize: '0.9rem',
-                              boxShadow: segment.speaker === 'Speaker 1' 
-                                ? '0 3px 8px rgba(79, 70, 229, 0.25)' 
-                                : '0 3px 8px rgba(229, 115, 115, 0.25)',
-                              letterSpacing: '0.3px'
+                              flex: 1,
+                              p: 3,
+                              borderRadius: '12px',
+                              bgcolor: currentTime >= segment.start_time && currentTime <= segment.end_time 
+                                ? (segment.speaker === 'Speaker 1' ? 'var(--primary-light)' : '#FFEBEE')
+                                : '#f9fafb',
+                              transition: 'all 0.3s ease',
+                              boxShadow: currentTime >= segment.start_time && currentTime <= segment.end_time
+                                ? (segment.speaker === 'Speaker 1' 
+                                  ? '0 4px 12px rgba(79, 70, 229, 0.15)' 
+                                  : '0 4px 12px rgba(229, 115, 115, 0.15)')
+                                : '0 1px 3px rgba(0,0,0,0.05)',
+                              border: '1px solid',
+                              borderColor: currentTime >= segment.start_time && currentTime <= segment.end_time
+                                ? (segment.speaker === 'Speaker 1' ? 'rgba(79, 70, 229, 0.2)' : 'rgba(229, 115, 115, 0.2)')
+                                : 'rgba(0,0,0,0.05)',
+                              position: 'relative',
+                              transformOrigin: 'center',
+                              transform: currentTime >= segment.start_time && currentTime <= segment.end_time
+                                ? 'scale(1.02)'
+                                : 'scale(1)',
+                              zIndex: currentTime >= segment.start_time && currentTime <= segment.end_time ? 10 : 1
                             }}
                           >
-                            {segment.speaker}
+                            <Typography 
+                              variant="body1" 
+                              sx={{ 
+                                lineHeight: 1.7,
+                                color: 'text.primary',
+                                wordBreak: 'break-word',
+                                fontSize: '1rem',
+                                fontWeight: 400,
+                                letterSpacing: '0.015em'
+                              }}
+                            >
+                              {/* If transcription has word-level timestamps, use them for highlighting */}
+                              {segment.words ? (
+                                segment.words.map((word, wordIndex) => (
+                                  <span 
+                                    key={wordIndex}
+                                    ref={isWordActive(word.start_time, word.end_time) ? activeWordRef : null}
+                                    style={{
+                                      fontWeight: isWordActive(word.start_time, word.end_time) ? 700 : 400,
+                                      backgroundColor: isWordActive(word.start_time, word.end_time) 
+                                        ? (segment.speaker === 'Speaker 1' ? 'var(--primary-color)' : '#E57373') 
+                                        : 'transparent',
+                                      color: isWordActive(word.start_time, word.end_time) ? 'white' : 'inherit',
+                                      padding: isWordActive(word.start_time, word.end_time) ? '3px 6px' : '2px 0',
+                                      borderRadius: '4px',
+                                      marginRight: '4px',
+                                      cursor: 'pointer',
+                                      transition: 'all 0.15s ease',
+                                      boxShadow: isWordActive(word.start_time, word.end_time) 
+                                        ? (segment.speaker === 'Speaker 1' 
+                                          ? '0 2px 5px rgba(79, 70, 229, 0.3)' 
+                                          : '0 2px 5px rgba(229, 115, 115, 0.3)') 
+                                        : 'none',
+                                      display: 'inline-block',
+                                      position: 'relative'
+                                    }}
+                                    onClick={() => jumpToTime(word.start_time)}
+                                  >
+                                    {word.text}
+                                  </span>
+                                ))
+                              ) : (
+                                segment.text
+                              )}
+                            </Typography>
                           </Box>
-                          <Button
-                            size="small"
-                            variant="text"
-                            onClick={() => jumpToTime(segment.start_time)}
-                            startIcon={<PlayArrowIcon fontSize="small" />}
-                            sx={{ 
-                              color: 'text.secondary',
-                              fontSize: '0.75rem',
-                              p: 0.5,
-                              minWidth: 0,
-                              borderRadius: '16px',
-                              '&:hover': { 
-                                bgcolor: 'rgba(0,0,0,0.04)', 
-                                color: 'var(--primary-color)' 
-                              },
-                              fontFamily: 'monospace',
-                              border: '1px solid rgba(0,0,0,0.08)'
-                            }}
-                          >
-                            {formatTime(segment.start_time)}
-                          </Button>
                         </Box>
-                        
-                        <Box
-                          sx={{
-                            flex: 1,
-                            p: 3,
-                            borderRadius: '12px',
-                            bgcolor: currentTime >= segment.start_time && currentTime <= segment.end_time 
-                              ? (segment.speaker === 'Speaker 1' ? 'var(--primary-light)' : '#FFEBEE')
-                              : '#f9fafb',
-                            transition: 'all 0.3s ease',
-                            boxShadow: currentTime >= segment.start_time && currentTime <= segment.end_time
-                              ? (segment.speaker === 'Speaker 1' 
-                                ? '0 4px 12px rgba(79, 70, 229, 0.15)' 
-                                : '0 4px 12px rgba(229, 115, 115, 0.15)')
-                              : '0 1px 3px rgba(0,0,0,0.05)',
-                            border: '1px solid',
-                            borderColor: currentTime >= segment.start_time && currentTime <= segment.end_time
-                              ? (segment.speaker === 'Speaker 1' ? 'rgba(79, 70, 229, 0.2)' : 'rgba(229, 115, 115, 0.2)')
-                              : 'rgba(0,0,0,0.05)',
-                            position: 'relative',
-                            transformOrigin: 'center',
-                            transform: currentTime >= segment.start_time && currentTime <= segment.end_time
-                              ? 'scale(1.02)'
-                              : 'scale(1)',
-                            zIndex: currentTime >= segment.start_time && currentTime <= segment.end_time ? 10 : 1
-                          }}
-                        >
-                          <Typography 
-                            variant="body1" 
-                            sx={{ 
-                              lineHeight: 1.7,
-                              color: 'text.primary',
-                              wordBreak: 'break-word',
-                              fontSize: '1rem',
-                              fontWeight: 400,
-                              letterSpacing: '0.015em'
-                            }}
-                          >
-                            {/* If transcription has word-level timestamps, use them for highlighting */}
-                            {segment.words ? (
-                              segment.words.map((word, wordIndex) => (
-                                <span 
-                                  key={wordIndex}
-                                  ref={isWordActive(word.start_time, word.end_time) ? activeWordRef : null}
-                                  style={{
-                                    fontWeight: isWordActive(word.start_time, word.end_time) ? 700 : 400,
-                                    backgroundColor: isWordActive(word.start_time, word.end_time) 
-                                      ? (segment.speaker === 'Speaker 1' ? 'var(--primary-color)' : '#E57373') 
-                                      : 'transparent',
-                                    color: isWordActive(word.start_time, word.end_time) ? 'white' : 'inherit',
-                                    padding: isWordActive(word.start_time, word.end_time) ? '3px 6px' : '2px 0',
-                                    borderRadius: '4px',
-                                    marginRight: '4px',
-                                    cursor: 'pointer',
-                                    transition: 'all 0.15s ease',
-                                    boxShadow: isWordActive(word.start_time, word.end_time) 
-                                      ? (segment.speaker === 'Speaker 1' 
-                                        ? '0 2px 5px rgba(79, 70, 229, 0.3)' 
-                                        : '0 2px 5px rgba(229, 115, 115, 0.3)') 
-                                      : 'none',
-                                    display: 'inline-block',
-                                    position: 'relative'
-                                  }}
-                                  onClick={() => jumpToTime(word.start_time)}
-                                >
-                                  {word.text}
-                                </span>
-                              ))
-                            ) : (
-                              segment.text
-                            )}
-                          </Typography>
-                        </Box>
+                      ))}
                       </Box>
-                    ))}
+                    </Box>
                   </Box>
                 </Box>
               ) : audioFile && !loading ? (
-                // Fallback message when audio is uploaded but no transcription yet
+                // FIXED: Empty state when audio exists but no transcription
                 <Box sx={{ 
                   flex: 1, 
                   display: 'flex',
@@ -1207,28 +1292,31 @@ const CallTranscription = () => {
                     Ready for Transcription
                   </Typography>
                   <Typography variant="body1" sx={{ mb: 3, maxWidth: '600px', color: 'text.secondary' }}>
-                    Your audio has been uploaded. Click the Transcribe button above to process the audio 
+                    Your audio has been uploaded. Click the Transcribe button to process the audio 
                     and generate a transcript with speaker identification using Groq AI.
                   </Typography>
-                  <Button
-                    variant="contained"
-                    onClick={handleProcessAudio}
-                    startIcon={<PlayArrowIcon />}
-                    sx={{ 
-                      bgcolor: '#4caf50',
-                      '&:hover': { bgcolor: '#388e3c' },
-                      px: 3,
-                      py: 1.5,
-                      borderRadius: '8px',
-                      textTransform: 'none',
-                      fontWeight: 600,
-                      boxShadow: '0 4px 8px rgba(76, 175, 80, 0.3)'
-                    }}
-                  >
-                    Start Transcription
-                  </Button>
                 </Box>
-              ) : null}
+              ) : (
+                // Loading state
+                <Box sx={{ 
+                  flex: 1, 
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  p: 4,
+                  textAlign: 'center',
+                  bgcolor: '#f9fafb'
+                }}>
+                  <CircularProgress size={60} sx={{ color: 'var(--primary-color)', mb: 3 }} />
+                  <Typography variant="h6" fontWeight="bold" sx={{ mb: 1 }}>
+                    {processingStep || "Loading..."}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Please wait while we process your request
+                  </Typography>
+                </Box>
+              )}
             </>
           )}
         </Paper>

@@ -83,6 +83,7 @@ export const fetchCallById = async (callId) => {
  * - Local download
  * - LocalStorage
  * - Public folder in project
+ * - Database (simulated)
  * 
  * @param {number} callId - Call ID to associate with transcription
  * @param {object} transcription - Transcription data
@@ -111,6 +112,8 @@ export const saveTranscription = async (callId, transcription) => {
     // 2. Store in localStorage for easy retrieval
     try {
       localStorage.setItem(`transcription_${callId}`, transcriptionJson);
+      // Set a flag that this call has been transcribed - used for persistence checks
+      localStorage.setItem(`transcription_flag_${callId}`, 'true');
       console.log(`Transcription saved to localStorage for call ${callId}`);
     } catch (storageError) {
       console.warn('Could not save to localStorage, file only downloaded:', storageError);
@@ -118,7 +121,8 @@ export const saveTranscription = async (callId, transcription) => {
     
     // 3. Save to project public folder using fetch API
     try {
-      const filename = `transcription_${callId}_${new Date().toISOString().replace(/:/g, '-')}.json`;
+      const timestamp = Date.now();
+      const filename = `transcription_${callId}_${new Date(timestamp).toISOString().replace(/:/g, '-')}.json`;
       const formData = new FormData();
       const transcriptionBlob = new Blob([transcriptionJson], { type: 'application/json' });
       
@@ -126,31 +130,51 @@ export const saveTranscription = async (callId, transcription) => {
       const transcriptionFile = new File([transcriptionBlob], filename, { type: 'application/json' });
       formData.append('file', transcriptionFile);
       formData.append('callId', callId);
-      formData.append('timestamp', Date.now());
+      formData.append('timestamp', timestamp);
       
       // Add a record for this transcription to localStorage for tracking
       const savedTranscriptions = JSON.parse(localStorage.getItem('projectTranscriptions') || '[]');
+      
+      // Remove any existing records for this call ID to avoid duplicates
+      const filteredTranscriptions = savedTranscriptions.filter(record => record.callId !== callId);
+      
       const transcriptionRecord = {
         callId,
         filename,
         path: `/transcriptions/${filename}`,
-        timestamp: Date.now(),
+        timestamp,
         clientInfo: transcription[0]?.client || 'Unknown client'
       };
       
-      savedTranscriptions.push(transcriptionRecord);
-      localStorage.setItem('projectTranscriptions', JSON.stringify(savedTranscriptions));
+      filteredTranscriptions.push(transcriptionRecord);
+      localStorage.setItem('projectTranscriptions', JSON.stringify(filteredTranscriptions));
       
       console.log(`Transcription metadata saved for future reference: ${filename}`);
 
-      // In a real implementation, you would do:
-      // await fetch('/api/save-transcription', {
-      //   method: 'POST',
-      //   body: formData
-      // });
-      
-      // Copy the transcription to the public folder in a real implementation
-      // We're mocking this behavior here since we can't directly write to the filesystem
+      // 4. Save metadata to the simulated database
+      try {
+        // In a real app, you would call an API to update the call record in the database:
+        // await fetch('/api/calls/${callId}/transcription', {
+        //   method: 'POST',
+        //   headers: { 'Content-Type': 'application/json' },
+        //   body: JSON.stringify({ 
+        //     has_transcription: true,
+        //     transcription_path: `/transcriptions/${filename}`,
+        //     transcription_date: new Date(timestamp).toISOString()
+        //   })
+        // });
+        
+        // For our demo, we'll store this info in localStorage
+        localStorage.setItem(`call_${callId}_transcription_metadata`, JSON.stringify({
+          has_transcription: true,
+          transcription_path: `/transcriptions/${filename}`,
+          transcription_date: new Date(timestamp).toISOString()
+        }));
+        
+        console.log(`Call metadata updated for call ${callId} to indicate transcription exists`);
+      } catch (dbError) {
+        console.error('Error updating call metadata in database:', dbError);
+      }
       
       return { 
         success: true, 
@@ -201,21 +225,47 @@ export const fetchTranscription = async (callId) => {
       try {
         console.log(`Transcription record found in project storage: ${transcriptionRecord.filename}`);
         
-        // In a real implementation, you would fetch the file from the public folder:
-        // const response = await fetch(transcriptionRecord.path);
-        // if (!response.ok) throw new Error('Failed to fetch transcription file');
-        // const transcriptionData = await response.json();
-        // return transcriptionData;
+        // For demo purposes, we'll just use the record in localStorage
+        // This simulates successfully retrieving from project storage
+        console.log('Simulating fetch from project storage path:', transcriptionRecord.path);
         
-        // For now, we'll check if there's a record but will still need the file manually selected
-        console.log('Transcription needs to be loaded from project storage path:', transcriptionRecord.path);
+        // If we have a record, there should be data in localStorage
+        const backupData = localStorage.getItem(`transcription_${callId}`);
+        if (backupData) {
+          return JSON.parse(backupData);
+        }
         
-        // Return placeholder notification to guide the user
-        return null;
+        // If we have a record but no data in localStorage, try to reconstruct basic data
+        return [{
+          speaker: "Speaker 1",
+          text: "Transcription data was previously saved but needs to be reloaded.",
+          start_time: 0,
+          end_time: 1
+        }];
       } catch (fetchError) {
         console.error('Error fetching transcription from project storage:', fetchError);
         // Continue to other methods if project storage fetch fails
       }
+    }
+    
+    // Check Supabase for transcriptions (stub for now - would be implemented with real backend)
+    try {
+      // This is where you'd check your backend/Supabase for stored transcriptions
+      console.log(`Checking for transcription in database for call ${callId}`);
+      
+      // For now, we'll just check if there's a flag indicating it was transcribed
+      const transcriptionFlag = localStorage.getItem(`transcription_flag_${callId}`);
+      if (transcriptionFlag === 'true') {
+        console.log('Found transcription flag - this call has been transcribed before');
+        return [{
+          speaker: "Speaker 1",
+          text: "This call has been transcribed before, but the data needs to be reloaded.",
+          start_time: 0,
+          end_time: 1
+        }];
+      }
+    } catch (dbError) {
+      console.error('Error checking database for transcription:', dbError);
     }
     
     // If no success with auto-loading methods, return null - will handle file selection in the UI
