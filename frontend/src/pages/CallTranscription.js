@@ -21,7 +21,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { transcribeAudio, diarizeTranscription } from '../utils/groqApiClient';
-import { fetchCallById, saveTranscription, fetchTranscription, uploadCallAudio, getCallAudioUrl } from '../utils/callsService';
+import { fetchCallById, fetchTranscription } from '../utils/callsService';
 import '../styles/dashboard.css';
 
 const CallTranscription = () => {
@@ -50,6 +50,8 @@ const CallTranscription = () => {
   const [transcription, setTranscription] = useState(null);
   const [diarizedTranscription, setDiarizedTranscription] = useState(null);
   const [existingTranscription, setExistingTranscription] = useState(false);
+  const [showTranscriptionUpload, setShowTranscriptionUpload] = useState(false);
+  const [showAudioUpload, setShowAudioUpload] = useState(false);
   
   // Initialize - fetch call data and existing transcription if call ID is available
   useEffect(() => {
@@ -69,19 +71,48 @@ const CallTranscription = () => {
           setCallData(fetchedCall);
         }
         
-        // Check for existing transcription
+        // Check for existing transcription in localStorage
         const existingTranscript = await fetchTranscription(callId);
         if (existingTranscript) {
           setDiarizedTranscription(existingTranscript);
           setExistingTranscription(true);
           setSuccess("Existing transcription loaded");
           setOpenSnackbar(true);
+        } else {
+          // Show transcription upload option if no transcription found
+          setShowTranscriptionUpload(true);
         }
         
-        // Check for existing audio file
-        const audioFileUrl = await getCallAudioUrl(callId);
-        if (audioFileUrl) {
-          setAudioUrl(audioFileUrl);
+        // Check for existing audio file in localStorage
+        const storedAudioUrl = localStorage.getItem(`audio_${callId}`);
+        if (storedAudioUrl) {
+          // Restore audio file from data URL
+          console.log(`Found stored audio for call ${callId}`);
+          setAudioUrl(storedAudioUrl);
+          
+          // Create a File object from the data URL
+          try {
+            const filename = localStorage.getItem(`audio_${callId}_filename`) || `audio_${callId}.mp3`;
+            const filetype = localStorage.getItem(`audio_${callId}_type`) || 'audio/mpeg';
+            
+            // Convert data URL to blob
+            const res = await fetch(storedAudioUrl);
+            const blob = await res.blob();
+            
+            // Create a File object 
+            const file = new File([blob], filename, { type: filetype });
+            setAudioFile(file);
+            
+            setSuccess("Audio file loaded from storage");
+            setOpenSnackbar(true);
+          } catch (error) {
+            console.error('Error recreating audio file:', error);
+            // We still have the audio URL, so playback should work even if we
+            // can't reconstruct the File object
+          }
+        } else {
+          // Check if we should show audio upload option
+          setShowAudioUpload(true);
         }
         
         setInitialized(true);
@@ -99,13 +130,32 @@ const CallTranscription = () => {
     }
   }, [callId, callData, initialized]);
   
-  // Handle file upload
+  // Handle audio file upload
   const handleFileChange = (event) => {
     const file = event.target.files[0];
     if (file) {
       setAudioFile(file);
       const url = URL.createObjectURL(file);
       setAudioUrl(url);
+      
+      // Save the audio file to localStorage (as a data URL)
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        // Store audio file as data URL in localStorage
+        try {
+          localStorage.setItem(`audio_${callId}`, reader.result);
+          console.log(`Audio file saved to localStorage for call ${callId}`);
+          
+          // Also save file name and type
+          localStorage.setItem(`audio_${callId}_filename`, file.name);
+          localStorage.setItem(`audio_${callId}_type`, file.type);
+        } catch (error) {
+          console.warn('Failed to save audio to localStorage:', error);
+          // It might fail due to size limitations, so we'll create a download as backup
+          saveAudioFileLocally(file);
+        }
+      };
+      reader.readAsDataURL(file);
       
       // Reset transcription data when a new file is uploaded
       if (existingTranscription) {
@@ -116,6 +166,57 @@ const CallTranscription = () => {
           setExistingTranscription(false);
         }
       }
+    }
+  };
+  
+  // Save audio file locally through download
+  const saveAudioFileLocally = (file) => {
+    // Create a download for the audio file
+    const fileUrl = URL.createObjectURL(file);
+    const link = document.createElement('a');
+    link.href = fileUrl;
+    // Use callId in the filename for easy reference
+    link.download = `audio_${callId}_${file.name}`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(fileUrl);
+    
+    setSuccess("Audio file saved to your downloads folder for later use");
+    setOpenSnackbar(true);
+  };
+  
+  // Handle transcription file upload
+  const handleTranscriptionFileUpload = (event) => {
+    const file = event.target.files[0];
+    if (file) {
+      setLoading(true);
+      
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsedData = JSON.parse(e.target.result);
+          // Save to localStorage for future use
+          localStorage.setItem(`transcription_${callId}`, e.target.result);
+          setDiarizedTranscription(parsedData);
+          setExistingTranscription(true);
+          setSuccess("Transcription file loaded successfully");
+          setOpenSnackbar(true);
+          setShowTranscriptionUpload(false);
+        } catch (error) {
+          console.error('Error parsing JSON file:', error);
+          setError("Invalid transcription file format");
+          setOpenSnackbar(true);
+        } finally {
+          setLoading(false);
+        }
+      };
+      reader.onerror = () => {
+        setError("Failed to read the file");
+        setOpenSnackbar(true);
+        setLoading(false);
+      };
+      reader.readAsText(file);
     }
   };
   
@@ -142,9 +243,31 @@ const CallTranscription = () => {
       setLoading(true);
       setError(null);
       
-      // Step 0: Upload audio file to storage
-      setProcessingStep('Uploading audio file...');
-      await uploadCallAudio(audioFile, callId);
+      // Make sure the audio file is saved to localStorage
+      if (!localStorage.getItem(`audio_${callId}`)) {
+        setProcessingStep('Saving audio file...');
+        // Save audio to localStorage
+        const reader = new FileReader();
+        const audioSavePromise = new Promise((resolve, reject) => {
+          reader.onloadend = () => {
+            try {
+              localStorage.setItem(`audio_${callId}`, reader.result);
+              localStorage.setItem(`audio_${callId}_filename`, audioFile.name);
+              localStorage.setItem(`audio_${callId}_type`, audioFile.type);
+              resolve();
+            } catch (error) {
+              console.warn('Failed to save audio to localStorage, likely too large', error);
+              // Save as download instead
+              saveAudioFileLocally(audioFile);
+              resolve();
+            }
+          };
+          reader.onerror = reject;
+          reader.readAsDataURL(audioFile);
+        });
+        
+        await audioSavePromise;
+      }
       
       // Step 1: Transcribe the audio using Groq's Whisper API endpoint
       setProcessingStep('Transcribing audio...');
@@ -159,14 +282,29 @@ const CallTranscription = () => {
       // and always returns an array
       setDiarizedTranscription(diarizedResult);
       
-      // Step 3: Save the transcription to the database
+      // Step 3: Save the transcription locally
       setProcessingStep('Saving transcription...');
-      await saveTranscription(callId, diarizedResult);
+      // Create a downloadable file
+      const transcriptionJson = JSON.stringify(diarizedResult);
+      localStorage.setItem(`transcription_${callId}`, transcriptionJson);
       
-      setSuccess("Transcription created and saved successfully");
+      // Create download link for transcription
+      const blob = new Blob([transcriptionJson], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `transcription_${callId}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      setSuccess("Transcription created and saved to your downloads folder");
       setOpenSnackbar(true);
       setLoading(false);
       setExistingTranscription(true);
+      setShowTranscriptionUpload(false);
+      setShowAudioUpload(false);
     } catch (error) {
       console.error('Error processing audio:', error);
       setLoading(false);
@@ -236,40 +374,48 @@ const CallTranscription = () => {
   
   return (
     <DashboardLayout>
-      <Box sx={{ p: 3 }}>
-        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+      <Box sx={{ p: 3, maxWidth: '100%', overflow: 'hidden' }}>
+        {/* Header with back button and title */}
+        <Box sx={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          mb: 4, 
+          pb: 2, 
+          borderBottom: '1px solid #e0e0e0' 
+        }}>
           <IconButton 
             aria-label="back" 
-            sx={{ mr: 2 }}
+            sx={{ 
+              mr: 2,
+              color: 'var(--primary-color)',
+              bgcolor: 'var(--primary-light)',
+              '&:hover': { bgcolor: 'var(--primary-hover)', opacity: 0.8 }
+            }}
             onClick={() => navigate('/dashboard/calls')}
           >
             <ArrowBackIcon />
           </IconButton>
-          <Typography variant="h4" fontWeight="bold" sx={{ color: 'var(--heading-color)' }}>
-            Call Transcription
+          <Box>
+            <Typography variant="h4" fontWeight="bold" sx={{ color: 'var(--heading-color)' }}>
+              Call Transcription
+            </Typography>
             {callData && (
               <Typography 
-                component="span" 
-                variant="h6" 
-                sx={{ ml: 2, color: 'text.secondary', fontWeight: 'normal' }}
+                variant="subtitle1" 
+                sx={{ color: 'text.secondary' }}
               >
-                - {callData.client}
+                {callData.client} • {formatDate(callData.date)}
               </Typography>
             )}
-          </Typography>
+          </Box>
         </Box>
         
         {callData && (
-          <Box sx={{ mb: 3, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+          <Box sx={{ mb: 4, display: 'flex', flexWrap: 'wrap', gap: 1 }}>
             <Chip 
               label={`Sales Rep: ${callData.salesRep}`} 
               variant="outlined" 
               size="small"
-            />
-            <Chip 
-              label={`Date: ${formatDate(callData.date)}`} 
-              variant="outlined" 
-              size="small" 
             />
             <Chip 
               label={`Duration: ${callData.duration} min`} 
@@ -295,35 +441,39 @@ const CallTranscription = () => {
           </Box>
         )}
         
-        <Grid container spacing={3}>
+        <Grid container spacing={3} sx={{ maxWidth: '100%' }}>
           {/* Audio Upload and Player Section */}
           <Grid item xs={12}>
-            <Paper sx={{ p: 3, borderRadius: 2, boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
-              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
+            <Paper sx={{ p: 3, borderRadius: 2, boxShadow: '0 4px 15px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 3 }}>
                 <Typography variant="h6" fontWeight="600">
                   {audioFile ? audioFile.name : (audioUrl ? "Audio Recording" : "Upload Audio File")}
                 </Typography>
-                <Button
-                  component="label"
-                  variant="contained"
-                  startIcon={<CloudUploadIcon />}
-                  sx={{ 
-                    bgcolor: 'var(--primary-color)',
-                    '&:hover': { bgcolor: 'var(--primary-hover)' }
-                  }}
-                >
-                  Upload
-                  <input
-                    type="file"
-                    hidden
-                    accept="audio/*"
-                    onChange={handleFileChange}
-                  />
-                </Button>
+                {/* Only show the upload button if no audio file or in an explicit upload state */}
+                {(!audioFile && !audioUrl) && (
+                  <Button
+                    component="label"
+                    variant="contained"
+                    startIcon={<CloudUploadIcon />}
+                    sx={{ 
+                      bgcolor: 'var(--primary-color)',
+                      '&:hover': { bgcolor: 'var(--primary-hover)' }
+                    }}
+                  >
+                    Upload Audio
+                    <input
+                      type="file"
+                      hidden
+                      accept="audio/*"
+                      onChange={handleFileChange}
+                    />
+                  </Button>
+                )}
               </Box>
               
+              {/* Enhanced Audio Player */}
               {audioUrl && (
-                <Box sx={{ mt: 3, mb: 2 }}>
+                <Box sx={{ mt: 2, mb: 3 }}>
                   <audio 
                     ref={audioRef}
                     src={audioUrl}
@@ -331,27 +481,47 @@ const CallTranscription = () => {
                     onLoadedMetadata={handleLoadedMetadata}
                     style={{ display: 'none' }}
                   />
-                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                    <IconButton 
-                      onClick={togglePlayPause}
-                      sx={{ 
-                        color: 'var(--primary-color)',
-                        bgcolor: 'var(--primary-light)',
-                        mr: 2,
-                        '&:hover': { bgcolor: 'var(--primary-hover)', opacity: 0.9 }
-                      }}
-                    >
-                      {isPlaying ? <PauseIcon /> : <PlayArrowIcon />}
-                    </IconButton>
-                    <Box sx={{ flexGrow: 1, mx: 2 }}>
+                  
+                  {/* Audio Player Controls */}
+                  <Box sx={{ 
+                    display: 'flex', 
+                    flexDirection: 'column', 
+                    p: 2, 
+                    borderRadius: 3, 
+                    bgcolor: 'var(--primary-light)', 
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.08)'
+                  }}>
+                    {/* Playback Controls */}
+                    <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                      <IconButton 
+                        onClick={togglePlayPause}
+                        sx={{ 
+                          color: 'white',
+                          bgcolor: 'var(--primary-color)',
+                          p: 1.5,
+                          mr: 2,
+                          boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+                          '&:hover': { bgcolor: 'var(--primary-hover)' }
+                        }}
+                      >
+                        {isPlaying ? <PauseIcon fontSize="medium" /> : <PlayArrowIcon fontSize="medium" />}
+                      </IconButton>
+                      
+                      <Typography variant="body1" fontWeight="500" sx={{ color: 'var(--primary-color)' }}>
+                        {formatTime(currentTime)} / {formatTime(duration)}
+                      </Typography>
+                    </Box>
+                    
+                    {/* Progress Bar */}
+                    <Box sx={{ position: 'relative', height: 8, borderRadius: 4, bgcolor: 'rgba(255,255,255,0.5)', mb: 1 }}>
                       <Box
                         sx={{
-                          height: '4px',
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          height: '100%',
                           width: '100%',
-                          bgcolor: 'rgba(0,0,0,0.1)',
-                          borderRadius: '2px',
-                          position: 'relative',
-                          cursor: 'pointer'
+                          cursor: 'pointer',
                         }}
                         onClick={(e) => {
                           const rect = e.currentTarget.getBoundingClientRect();
@@ -361,46 +531,79 @@ const CallTranscription = () => {
                             audioRef.current.currentTime = newTime;
                           }
                         }}
-                      >
-                        <Box
-                          sx={{
+                      />
+                      <Box
+                        sx={{
+                          position: 'absolute',
+                          left: 0,
+                          top: 0,
+                          height: '100%',
+                          width: `${(currentTime / duration) * 100}%`,
+                          bgcolor: 'var(--primary-color)',
+                          borderRadius: 4,
+                          transition: 'width 0.1s',
+                          '&::after': {
+                            content: '""',
                             position: 'absolute',
-                            left: 0,
-                            top: 0,
-                            height: '100%',
-                            width: `${(currentTime / duration) * 100}%`,
-                            bgcolor: 'var(--primary-color)',
-                            borderRadius: '2px',
-                          }}
-                        />
-                      </Box>
+                            right: -6,
+                            top: -2,
+                            width: 12,
+                            height: 12,
+                            borderRadius: '50%',
+                            bgcolor: 'white',
+                            border: '2px solid var(--primary-color)',
+                            boxShadow: '0 1px 3px rgba(0,0,0,0.3)'
+                          }
+                        }}
+                      />
                     </Box>
-                    <Typography variant="body2" sx={{ fontFamily: 'monospace', minWidth: 70 }}>
-                      {formatTime(currentTime)} / {formatTime(duration)}
-                    </Typography>
                   </Box>
                 </Box>
               )}
               
-              {audioFile && !existingTranscription && !loading && (
-                <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+              {/* Processing Button or Transcription Upload */}
+              <Box sx={{ display: 'flex', justifyContent: 'center', mt: 3 }}>
+                {audioFile && !existingTranscription && !loading && (
                   <Button
                     variant="contained"
                     onClick={handleProcessAudio}
+                    size="large"
                     sx={{ 
                       bgcolor: 'var(--primary-color)',
+                      px: 4,
+                      py: 1.5,
+                      borderRadius: 2,
                       '&:hover': { bgcolor: 'var(--primary-hover)' }
                     }}
                   >
                     Process Audio
                   </Button>
-                </Box>
-              )}
+                )}
+                
+                {/* Show transcription upload button if needed */}
+                {showTranscriptionUpload && !existingTranscription && !loading && (
+                  <Button
+                    component="label"
+                    variant="outlined"
+                    startIcon={<CloudUploadIcon />}
+                    sx={{ ml: audioFile ? 2 : 0 }}
+                  >
+                    Upload Transcription
+                    <input
+                      type="file"
+                      hidden
+                      accept="application/json"
+                      onChange={handleTranscriptionFileUpload}
+                    />
+                  </Button>
+                )}
+              </Box>
               
+              {/* Loading indicator */}
               {loading && (
                 <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', my: 4 }}>
-                  <CircularProgress sx={{ mb: 2, color: 'var(--primary-color)' }} />
-                  <Typography variant="body1">{processingStep}</Typography>
+                  <CircularProgress size={40} sx={{ mb: 2, color: 'var(--primary-color)' }} />
+                  <Typography variant="body1" fontWeight="500">{processingStep}</Typography>
                 </Box>
               )}
               
@@ -424,13 +627,15 @@ const CallTranscription = () => {
           {/* Transcription Display Section */}
           {diarizedTranscription && (
             <Grid item xs={12}>
-              <Paper sx={{ p: 3, borderRadius: 2, boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
+              <Paper sx={{ p: 3, borderRadius: 2, boxShadow: '0 4px 15px rgba(0,0,0,0.1)', overflow: 'hidden' }}>
                 <Box 
                   sx={{ 
                     display: 'flex', 
                     justifyContent: 'space-between', 
                     alignItems: 'center', 
-                    mb: 3
+                    mb: 3,
+                    pb: 2,
+                    borderBottom: '1px solid #f0f0f0'
                   }}
                 >
                   <Typography variant="h6" fontWeight="600">
@@ -446,7 +651,7 @@ const CallTranscription = () => {
                   )}
                 </Box>
                 
-                <Box sx={{ maxHeight: '500px', overflowY: 'auto', pr: 2 }}>
+                <Box sx={{ maxHeight: '500px', overflowY: 'auto', overflowX: 'hidden', pr: 2 }}>
                   {diarizedTranscription.map((segment, index) => (
                     <Box 
                       key={index} 
@@ -454,6 +659,7 @@ const CallTranscription = () => {
                         mb: 3,
                         display: 'flex',
                         flexDirection: 'column',
+                        maxWidth: '100%'
                       }}
                     >
                       <Box 
@@ -468,24 +674,27 @@ const CallTranscription = () => {
                           variant="subtitle1" 
                           sx={{ 
                             fontWeight: 600,
-                            color: segment.speaker === 'Speaker 1' ? 'var(--primary-color)' : '#E57373'
+                            color: segment.speaker === 'Speaker 1' ? 'var(--primary-color)' : '#E57373',
+                            minWidth: '80px'
                           }}
                         >
                           {segment.speaker}
                         </Typography>
-                        <Typography 
-                          variant="caption" 
-                          sx={{ 
-                            color: 'text.secondary',
-                            cursor: 'pointer',
-                            '&:hover': {
-                              textDecoration: 'underline'
-                            }
-                          }}
+                        <Button
+                          size="small"
+                          variant="text"
                           onClick={() => jumpToTime(segment.start_time)}
+                          startIcon={<PlayArrowIcon fontSize="small" />}
+                          sx={{ 
+                            color: 'var(--primary-color)',
+                            fontSize: '0.8rem',
+                            p: 0,
+                            minWidth: 0,
+                            '&:hover': { bgcolor: 'transparent', textDecoration: 'underline' }
+                          }}
                         >
                           {formatTime(segment.start_time)} - {formatTime(segment.end_time)}
-                        </Typography>
+                        </Button>
                       </Box>
                       
                       <Typography 
@@ -493,15 +702,16 @@ const CallTranscription = () => {
                         sx={{ 
                           lineHeight: 1.7,
                           ml: 2,
-                          borderLeft: `3px solid ${segment.speaker === 'Speaker 1' ? 'var(--primary-light)' : '#FFCDD2'}`,
+                          borderLeft: `3px solid ${segment.speaker === 'Speaker 1' ? 'var(--primary-color)' : '#E57373'}`,
                           pl: 2,
-                          pb: 1,
-                          pt: 1,
+                          pb: 1.5,
+                          pt: 1.5,
                           bgcolor: currentTime >= segment.start_time && currentTime <= segment.end_time 
                             ? (segment.speaker === 'Speaker 1' ? 'var(--primary-light)' : '#FFEBEE')
                             : 'transparent',
                           borderRadius: '0 4px 4px 0',
-                          transition: 'background-color 0.3s ease'
+                          transition: 'background-color 0.3s ease',
+                          wordBreak: 'break-word'
                         }}
                       >
                         {/* If transcription has word-level timestamps, use them for highlighting */}
@@ -512,7 +722,7 @@ const CallTranscription = () => {
                               style={{
                                 fontWeight: isWordActive(word.start_time, word.end_time) ? 700 : 400,
                                 backgroundColor: isWordActive(word.start_time, word.end_time) 
-                                  ? (segment.speaker === 'Speaker 1' ? 'var(--primary-color)' : '#EF5350') 
+                                  ? (segment.speaker === 'Speaker 1' ? 'var(--primary-color)' : '#E57373') 
                                   : 'transparent',
                                 color: isWordActive(word.start_time, word.end_time) ? 'white' : 'inherit',
                                 padding: isWordActive(word.start_time, word.end_time) ? '2px 4px' : '2px 0',

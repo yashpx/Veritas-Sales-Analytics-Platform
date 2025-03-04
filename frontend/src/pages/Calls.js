@@ -7,10 +7,7 @@ import {
   TextField, InputAdornment, IconButton, CircularProgress, Alert
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import DownloadIcon from '@mui/icons-material/Download';
-import VisibilityIcon from '@mui/icons-material/Visibility';
 import MicIcon from '@mui/icons-material/Mic';
-import PhoneIcon from '@mui/icons-material/Phone';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
 import '../styles/dashboard.css';
@@ -118,33 +115,7 @@ const Calls = () => {
           <Typography variant="h4" fontWeight="bold" sx={{ color: 'var(--heading-color)' }}>
             Call Logs
           </Typography>
-          <Box>
-            <IconButton 
-              aria-label="New Call" 
-              component={Link}
-              to="/dashboard/call-transcription"
-              sx={{ 
-                color: 'white',
-                bgcolor: 'var(--primary-color)', 
-                mr: 1,
-                '&:hover': { bgcolor: 'var(--primary-hover)' } 
-              }}
-              title="New Call/Transcription"
-            >
-              <PhoneIcon />
-            </IconButton>
-            <IconButton 
-              aria-label="download" 
-              sx={{ 
-                color: 'var(--primary-color)',
-                bgcolor: 'var(--primary-light)', 
-                '&:hover': { bgcolor: 'var(--primary-hover)' } 
-              }}
-              title="Export Call Logs"
-            >
-              <DownloadIcon />
-            </IconButton>
-          </Box>
+          {/* Action buttons removed as per request */}
         </Box>
 
         <Box sx={{ mb: 4 }}>
@@ -176,16 +147,16 @@ const Calls = () => {
           </Alert>
         )}
 
-        <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
-          <Table>
+        <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: '0 4px 15px rgba(0,0,0,0.1)', overflowX: 'hidden' }}>
+          <Table sx={{ tableLayout: 'fixed', width: '100%' }}>
             <TableHead>
               <TableRow>
-                <TableCell>Date</TableCell>
-                <TableCell>Client</TableCell>
-                <TableCell>Sales Rep</TableCell>
-                <TableCell>Duration</TableCell>
-                <TableCell>Outcome</TableCell>
-                <TableCell align="center">Actions</TableCell>
+                <TableCell width="15%">Date</TableCell>
+                <TableCell width="20%">Client</TableCell>
+                <TableCell width="20%">Sales Rep</TableCell>
+                <TableCell width="15%">Duration</TableCell>
+                <TableCell width="15%">Outcome</TableCell>
+                <TableCell width="15%" align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -219,14 +190,6 @@ const Calls = () => {
                     </TableCell>
                     <TableCell align="center">
                       <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                        <IconButton 
-                          size="small" 
-                          aria-label="view" 
-                          title="View details"
-                          sx={{ color: 'var(--primary-color)', mr: 1 }}
-                        >
-                          <VisibilityIcon fontSize="small" />
-                        </IconButton>
                         <IconButton 
                           size="small" 
                           aria-label="transcribe" 

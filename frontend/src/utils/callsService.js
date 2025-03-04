@@ -79,54 +79,45 @@ export const fetchCallById = async (callId) => {
 };
 
 /**
- * Save transcription to Supabase
+ * Save transcription to a local file
  * @param {number} callId - Call ID to associate with transcription
  * @param {object} transcription - Transcription data
  * @returns {Promise} - Promise with saved transcription data
  */
 export const saveTranscription = async (callId, transcription) => {
   try {
-    // First check if a transcription already exists for this call
-    const { data: existingData, error: existingError } = await supabase
-      .from('call_transcription')
-      .select('id')
-      .eq('call_id', callId)
-      .maybeSingle();
-    
-    if (existingError) throw existingError;
-    
     // Convert transcription object to JSON string for storage
     const transcriptionJson = JSON.stringify(transcription);
     
-    let result;
+    // For browser environment, we can't directly write to filesystem
+    // So we'll create a Blob and trigger a download to save the file locally
+    const blob = new Blob([transcriptionJson], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
     
-    if (existingData) {
-      // Update existing transcription
-      const { data, error } = await supabase
-        .from('call_transcription')
-        .update({ call_transcription: transcriptionJson })
-        .eq('id', existingData.id)
-        .select()
-        .single();
-      
-      if (error) throw error;
-      result = data;
-    } else {
-      // Insert new transcription
-      const { data, error } = await supabase
-        .from('call_transcription')
-        .insert([{ 
-          call_id: callId,
-          call_transcription: transcriptionJson
-        }])
-        .select()
-        .single();
-      
-      if (error) throw error;
-      result = data;
+    // Create a link element to trigger the download
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `transcription_${callId}.json`;
+    document.body.appendChild(link);
+    link.click();
+    
+    // Clean up
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+    
+    // Store in localStorage for easy retrieval
+    try {
+      localStorage.setItem(`transcription_${callId}`, transcriptionJson);
+      console.log(`Transcription saved to localStorage for call ${callId}`);
+    } catch (storageError) {
+      console.warn('Could not save to localStorage, file only downloaded:', storageError);
     }
     
-    return result;
+    return { 
+      success: true, 
+      call_id: callId,
+      message: 'Transcription saved locally'
+    };
   } catch (error) {
     console.error('Error saving transcription:', error);
     throw error;
@@ -140,28 +131,24 @@ export const saveTranscription = async (callId, transcription) => {
  */
 export const fetchTranscription = async (callId) => {
   try {
-    const { data, error } = await supabase
-      .from('call_transcription')
-      .select('call_transcription')
-      .eq('call_id', callId)
-      .maybeSingle();
+    // Try to get from localStorage first
+    const localData = localStorage.getItem(`transcription_${callId}`);
     
-    if (error) throw error;
-    
-    if (!data) {
-      return null; // No transcription found
+    if (localData) {
+      try {
+        console.log(`Transcription found in localStorage for call ${callId}`);
+        return JSON.parse(localData);
+      } catch (parseError) {
+        console.error('Error parsing transcription JSON from localStorage:', parseError);
+        return null; // Return null if parsing fails
+      }
     }
     
-    // Parse the JSON string back to an object
-    try {
-      return JSON.parse(data.call_transcription);
-    } catch (parseError) {
-      console.error('Error parsing transcription JSON:', parseError);
-      return data.call_transcription; // Return as string if parsing fails
-    }
+    // If not in localStorage, return null - we'll handle file selection in the UI
+    return null;
   } catch (error) {
     console.error(`Error fetching transcription for call ID ${callId}:`, error);
-    throw error;
+    return null;
   }
 };
 
