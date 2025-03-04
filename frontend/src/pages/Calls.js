@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate, Link } from 'react-router-dom';
+import { createClient } from '@supabase/supabase-js';
 import { 
   Box, Paper, Typography, Table, TableBody, TableCell, 
   TableContainer, TableHead, TableRow, 
@@ -9,10 +10,15 @@ import SearchIcon from '@mui/icons-material/Search';
 import DownloadIcon from '@mui/icons-material/Download';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import MicIcon from '@mui/icons-material/Mic';
+import PhoneIcon from '@mui/icons-material/Phone';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
-import { fetchCallLogs } from '../utils/callsService';
 import '../styles/dashboard.css';
+
+// Supabase connection
+const supabaseUrl = 'https://coghrwmmyyzmbnndlawi.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvZ2hyd21teXl6bWJubmRsYXdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4OTcyMjUsImV4cCI6MjA1NjQ3MzIyNX0.WLm0l2UeFPiPNxyClnM4bQpxw4TcYFxleTdc7K0G6AM';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const Calls = () => {
   const { user } = useAuth();
@@ -24,13 +30,50 @@ const Calls = () => {
 
   useEffect(() => {
     // Fetch calls from Supabase
-    const getCalls = async () => {
+    const fetchCallLogs = async () => {
       try {
         setLoading(true);
         setError(null);
-        const callData = await fetchCallLogs();
-        setCalls(callData);
-        setFilteredCalls(callData);
+        
+        // Get call logs data with joined customer and sales rep information
+        const { data, error } = await supabase
+          .from('call_logs')
+          .select(`
+            call_id,
+            call_date,
+            duration_minutes,
+            call_outcome,
+            notes,
+            customers (
+              customer_id,
+              customer_first_name,
+              customer_last_name
+            ),
+            sales_reps (
+              sales_rep_id,
+              sales_rep_first_name,
+              sales_rep_last_name
+            )
+          `)
+          .order('call_date', { ascending: false });
+        
+        if (error) throw error;
+        
+        // Transform data for display
+        const formattedCalls = data.map(call => ({
+          id: call.call_id,
+          date: call.call_date,
+          client: `${call.customers?.customer_first_name || 'Unknown'} ${call.customers?.customer_last_name || ''}`,
+          customerId: call.customers?.customer_id,
+          salesRep: `${call.sales_reps?.sales_rep_first_name || 'Unknown'} ${call.sales_reps?.sales_rep_last_name || ''}`,
+          salesRepId: call.sales_reps?.sales_rep_id,
+          duration: call.duration_minutes,
+          outcome: call.call_outcome || 'Unknown',
+          notes: call.notes
+        }));
+        
+        setCalls(formattedCalls);
+        setFilteredCalls(formattedCalls);
         setLoading(false);
       } catch (err) {
         console.error('Error fetching calls:', err);
@@ -40,7 +83,7 @@ const Calls = () => {
     };
 
     if (user) {
-      getCalls();
+      fetchCallLogs();
     }
   }, [user]);
 
@@ -73,18 +116,35 @@ const Calls = () => {
       <Box sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
           <Typography variant="h4" fontWeight="bold" sx={{ color: 'var(--heading-color)' }}>
-            Call Records
+            Call Logs
           </Typography>
-          <IconButton 
-            aria-label="download" 
-            sx={{ 
-              color: 'var(--primary-color)',
-              bgcolor: 'var(--primary-light)', 
-              '&:hover': { bgcolor: 'var(--primary-hover)' } 
-            }}
-          >
-            <DownloadIcon />
-          </IconButton>
+          <Box>
+            <IconButton 
+              aria-label="New Call" 
+              component={Link}
+              to="/dashboard/call-transcription"
+              sx={{ 
+                color: 'white',
+                bgcolor: 'var(--primary-color)', 
+                mr: 1,
+                '&:hover': { bgcolor: 'var(--primary-hover)' } 
+              }}
+              title="New Call/Transcription"
+            >
+              <PhoneIcon />
+            </IconButton>
+            <IconButton 
+              aria-label="download" 
+              sx={{ 
+                color: 'var(--primary-color)',
+                bgcolor: 'var(--primary-light)', 
+                '&:hover': { bgcolor: 'var(--primary-hover)' } 
+              }}
+              title="Export Call Logs"
+            >
+              <DownloadIcon />
+            </IconButton>
+          </Box>
         </Box>
 
         <Box sx={{ mb: 4 }}>

@@ -41,9 +41,9 @@ const DashboardLayout = ({ children }) => {
   const navigationItems = [
     { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
     { text: 'Analytics', icon: <AnalyticsIcon />, path: '/dashboard/analytics' },
-    { text: 'Customers', icon: <PeopleIcon />, path: '/dashboard/customers' },
+    { text: 'Contacts', icon: <PeopleIcon />, path: '/dashboard/customers' },
     { text: 'Sales Reps', icon: <PeopleIcon />, path: '/dashboard/sales-reps' },
-    { text: 'Calls', icon: <PhoneIcon />, path: '/dashboard/calls' },
+    { text: 'Call Logs', icon: <PhoneIcon />, path: '/dashboard/calls' },
   ];
 
   const utilityItems = [

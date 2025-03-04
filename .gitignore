@@ -33,4 +33,7 @@ frontend/yarn-error.log*
 *.swo
 
 # Miscellaneous
-.DS_Store
+.DS_Store\
+
+
+new_pages/
