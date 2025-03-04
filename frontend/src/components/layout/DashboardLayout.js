@@ -130,20 +130,17 @@ const DashboardLayout = ({ children }) => {
             sx={{
               width: 40,
               height: 40,
-              backgroundColor: 'var(--primary-color)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               borderRadius: '4px',
-              fontWeight: 'bold',
-              color: 'white',
               transition: 'transform 0.2s ease',
               '&:hover': {
                 transform: 'scale(1.05)',
               },
             }}
           >
-            V
+            <img src="/assets/Logo.png" alt="Veritas" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
           </Box>
 
           {expanded && (

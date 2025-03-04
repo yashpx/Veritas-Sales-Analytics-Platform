@@ -8,7 +8,7 @@ const AuthLayout = ({ children, illustrationSrc, heading, video = false }) => {
       <div className="auth-layout-form">
         <div className="auth-layout-content">
           <div className="auth-layout-logo">
-            <img src="/assets/logo_dark.png" alt="Logo" />
+            <img src="/assets/Logo.png" alt="Logo" />
             <span>AuthSystem</span>
           </div>
           
