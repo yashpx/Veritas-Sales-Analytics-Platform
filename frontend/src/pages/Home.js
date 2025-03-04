@@ -27,7 +27,7 @@ const Home = () => {
           </Link>
         ) : (
           <Link to="/login">
-            <Button>Get Started</Button>
+            <Button variant="white">Get Started</Button>
           </Link>
         )}
       </div>

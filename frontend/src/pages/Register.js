@@ -7,8 +7,7 @@ const Register = () => {
   return (
     <AuthLayout 
       heading="Create your account" 
-      illustrationSrc="/assets/Welcome.mp4"
-      video={true}
+      illustrationSrc="/assets/illustration.png"
     >
       <RegisterForm />
       <div className="auth-switch">

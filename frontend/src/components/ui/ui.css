@@ -32,6 +32,16 @@
   background-color: rgba(75, 85, 99, 0.2);
 }
 
+.ui-button.white {
+  background-color: white;
+  color: var(--primary-color);
+}
+.ui-button.white:hover {
+  background-color: #f9f9f9;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
 .ui-button.danger {
   background-color: var(--error-color);
 }
