@@ -78,13 +78,15 @@ const CallTranscription = () => {
         
         // Check for existing transcription
         const existingTranscript = await fetchTranscription(callId);
-        if (existingTranscript) {
+        if (existingTranscript && Array.isArray(existingTranscript) && existingTranscript.length > 0) {
           setDiarizedTranscription(existingTranscript);
           setExistingTranscription(true);
           setSuccess("Existing transcription loaded");
           setShowSnackbar(true);
         } else {
-          // Show transcription upload option if no transcription found
+          // Clear any previously loaded transcription and show upload options
+          setDiarizedTranscription(null);
+          setExistingTranscription(false);
           setShowTranscriptionUpload(true);
         }
         
@@ -150,13 +152,19 @@ const CallTranscription = () => {
         }
       }
       
+      // Make sure transcription upload panel is not displayed when we have an audio file
+      setShowTranscriptionUpload(false);
+      // Make sure audio upload panel is not displayed
+      setShowAudioUpload(false);
+      
       // Log the state for debugging
       console.log("Audio file set:", {
         filename: file.name,
         size: file.size,
         type: file.type,
         audioUrl: Boolean(url),
-        existingTranscription: Boolean(existingTranscription)
+        existingTranscription: Boolean(existingTranscription),
+        diarizedTranscription: Boolean(diarizedTranscription)
       });
     }
   };
@@ -291,7 +299,7 @@ const CallTranscription = () => {
         transcriptionLength: diarizedResult.length
       });
       
-      setSuccess("Transcription created and saved to downloads and project folder");
+      setSuccess("Transcription created successfully! It has been saved to your downloads folder and project storage.");
       setShowSnackbar(true);
       setLoading(false);
       setExistingTranscription(true);
@@ -516,7 +524,11 @@ const CallTranscription = () => {
             border: '1px solid rgba(0,0,0,0.05)'
           }}
         >
-          {(!audioFile && !diarizedTranscription && !showAudioUpload) ? (
+          {/* Audio upload form is shown when no audio file exists AND either:
+              1. No transcription exists AND showAudioUpload is false, OR
+              2. showAudioUpload is explicitly true 
+           */}
+          {(!audioFile && (!diarizedTranscription || showAudioUpload)) ? (
             // Upload prompt when no file is selected
             <Box 
               sx={{ 
@@ -644,14 +656,20 @@ const CallTranscription = () => {
           ) : (
             // Main content when file is selected or transcription exists
             <>
-              {/* Debug info - remove in production */}
-              {process.env.NODE_ENV === 'development' && (
-                <Box sx={{ position: 'absolute', top: 0, right: 0, p: 1, bgcolor: 'rgba(0,0,0,0.05)', fontSize: '10px', zIndex: 1000 }}>
-                  <div>audioFile: {audioFile ? '✓' : '✗'}</div>
-                  <div>audioUrl: {audioUrl ? '✓' : '✗'}</div>
-                  <div>diarizedTranscription: {diarizedTranscription ? '✓' : '✗'}</div>
-                </Box>
-              )}
+              {/* Debug info - keep this in place until the button issue is fixed */}
+              <Box sx={{ position: 'absolute', top: 0, right: 0, p: 1, bgcolor: 'rgba(0,0,0,0.05)', fontSize: '10px', zIndex: 1000 }}>
+                <div>audioFile: {audioFile ? '✓' : '✗'}</div>
+                <div>audioUrl: {audioUrl ? '✓' : '✗'}</div>
+                <div>diarizedTranscription: {diarizedTranscription ? '✓' : '✗'}</div>
+                <div>loading: {loading ? '✓' : '✗'}</div>
+                <div>showAudioUpload: {showAudioUpload ? '✓' : '✗'}</div>
+                <div>existingTranscription: {existingTranscription ? '✓' : '✗'}</div>
+                <div>showTranscriptionUpload: {showTranscriptionUpload ? '✓' : '✗'}</div>
+                <div style={{fontWeight: 'bold', color: 'red'}}>
+                  Transcribe button should show: {(audioFile && !diarizedTranscription && !loading) ? '✓' : '✗'}
+                </div>
+              </Box>
+              
               {/* Top panel with audio player */}
               <Box sx={{ 
                 p: 3, 
@@ -703,22 +721,46 @@ const CallTranscription = () => {
                         <Typography variant="body2" fontWeight="600" sx={{ fontSize: '0.9rem' }}>
                           {audioFile?.name || "Audio Recording"}
                         </Typography>
-                        <Typography 
-                          variant="body2" 
-                          sx={{ 
-                            color: 'var(--primary-color)',
-                            fontWeight: 500,
-                            fontSize: '0.9rem',
-                            fontFamily: 'monospace',
-                            letterSpacing: '0.5px',
-                            bgcolor: 'rgba(79, 70, 229, 0.08)',
-                            px: 1.5,
-                            py: 0.5,
-                            borderRadius: '4px'
-                          }}
-                        >
-                          {formatTime(currentTime)} / {formatTime(duration)}
-                        </Typography>
+                        
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                          {/* NEW TRANSCRIBE BUTTON - ALWAYS VISIBLE NEXT TO PLAYER WHEN CONDITIONS MET */}
+                          {audioFile && !diarizedTranscription && !loading && (
+                            <Button
+                              variant="contained"
+                              color="primary"
+                              onClick={handleProcessAudio}
+                              startIcon={<PlayArrowIcon />}
+                              size="small"
+                              sx={{
+                                bgcolor: '#4caf50',
+                                '&:hover': { bgcolor: '#388e3c' },
+                                fontWeight: 600,
+                                boxShadow: '0 2px 5px rgba(0,0,0,0.2)',
+                                borderRadius: '4px',
+                                textTransform: 'none',
+                              }}
+                            >
+                              Transcribe
+                            </Button>
+                          )}
+                          
+                          <Typography 
+                            variant="body2" 
+                            sx={{ 
+                              color: 'var(--primary-color)',
+                              fontWeight: 500,
+                              fontSize: '0.9rem',
+                              fontFamily: 'monospace',
+                              letterSpacing: '0.5px',
+                              bgcolor: 'rgba(79, 70, 229, 0.08)',
+                              px: 1.5,
+                              py: 0.5,
+                              borderRadius: '4px'
+                            }}
+                          >
+                            {formatTime(currentTime)} / {formatTime(duration)}
+                          </Typography>
+                        </Box>
                       </Box>
                       
                       {/* Progress Bar */}
@@ -776,6 +818,38 @@ const CallTranscription = () => {
                         />
                       </Box>
                     </Box>
+                    
+                    {/* Add a banner notice directly below the player when transcription is needed */}
+                    {audioFile && !diarizedTranscription && !loading && (
+                      <Box sx={{ 
+                        mt: 2,
+                        p: 2, 
+                        bgcolor: 'rgba(76, 175, 80, 0.1)', 
+                        border: '1px solid rgba(76, 175, 80, 0.3)',
+                        borderRadius: '4px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between'
+                      }}>
+                        <Typography variant="body2" sx={{ fontWeight: 500, color: '#1b5e20' }}>
+                          Audio file uploaded successfully. Ready to create a transcription with speaker identification.
+                        </Typography>
+                        <Button
+                          variant="contained"
+                          onClick={handleProcessAudio}
+                          startIcon={<PlayArrowIcon />}
+                          sx={{ 
+                            bgcolor: '#4caf50',
+                            '&:hover': { bgcolor: '#388e3c' },
+                            ml: 2,
+                            textTransform: 'none',
+                            fontWeight: 600
+                          }}
+                        >
+                          Transcribe Now
+                        </Button>
+                      </Box>
+                    )}
                   </>
                 )}
                 
@@ -808,33 +882,6 @@ const CallTranscription = () => {
                         {processingStep}
                       </Typography>
                     </Box>
-                  )}
-                  
-                  {/* Process button - only shown when audio exists but transcription doesn't */}
-                  {audioFile && !diarizedTranscription && !loading && (
-                    <Tooltip title="Process audio to create transcription">
-                      <Button
-                        variant="contained"
-                        onClick={handleProcessAudio}
-                        sx={{ 
-                          bgcolor: 'var(--primary-color)',
-                          '&:hover': { 
-                            bgcolor: 'var(--primary-hover)',
-                            transform: 'translateY(-2px)',
-                            boxShadow: '0 6px 12px rgba(79, 70, 229, 0.3)'
-                          },
-                          px: 3,
-                          py: 1.2,
-                          borderRadius: '8px',
-                          textTransform: 'none',
-                          fontWeight: 600,
-                          boxShadow: '0 4px 8px rgba(79, 70, 229, 0.2)',
-                          transition: 'all 0.3s ease'
-                        }}
-                      >
-                        Process Audio
-                      </Button>
-                    </Tooltip>
                   )}
                   
                   {/* Show audio upload button if needed */}
@@ -870,8 +917,9 @@ const CallTranscription = () => {
                   )}
               </Box>
               
-              {/* Transcript content area */}
-              {diarizedTranscription && (
+
+              {/* Transcript content area - show transcription if available, otherwise show a message */}
+              {diarizedTranscription ? (
                 <Box sx={{ 
                   flex: 1, 
                   display: 'flex',
@@ -1129,7 +1177,58 @@ const CallTranscription = () => {
                     ))}
                   </Box>
                 </Box>
-              )}
+              ) : audioFile && !loading ? (
+                // Fallback message when audio is uploaded but no transcription yet
+                <Box sx={{ 
+                  flex: 1, 
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  p: 4,
+                  textAlign: 'center',
+                  bgcolor: '#f9fafb'
+                }}>
+                  <Box
+                    sx={{
+                      width: 80,
+                      height: 80,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      bgcolor: 'rgba(76, 175, 80, 0.1)',
+                      borderRadius: '50%',
+                      mb: 3
+                    }}
+                  >
+                    <PlayArrowIcon sx={{ fontSize: 40, color: '#4caf50' }} />
+                  </Box>
+                  <Typography variant="h5" fontWeight="bold" sx={{ mb: 2, color: '#2e7d32' }}>
+                    Ready for Transcription
+                  </Typography>
+                  <Typography variant="body1" sx={{ mb: 3, maxWidth: '600px', color: 'text.secondary' }}>
+                    Your audio has been uploaded. Click the Transcribe button above to process the audio 
+                    and generate a transcript with speaker identification using Groq AI.
+                  </Typography>
+                  <Button
+                    variant="contained"
+                    onClick={handleProcessAudio}
+                    startIcon={<PlayArrowIcon />}
+                    sx={{ 
+                      bgcolor: '#4caf50',
+                      '&:hover': { bgcolor: '#388e3c' },
+                      px: 3,
+                      py: 1.5,
+                      borderRadius: '8px',
+                      textTransform: 'none',
+                      fontWeight: 600,
+                      boxShadow: '0 4px 8px rgba(76, 175, 80, 0.3)'
+                    }}
+                  >
+                    Start Transcription
+                  </Button>
+                </Box>
+              ) : null}
             </>
           )}
         </Paper>

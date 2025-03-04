@@ -252,25 +252,33 @@ export const saveAudioFile = async (audioFile, callId) => {
     URL.revokeObjectURL(url);
     
     // 2. Try to store in localStorage if not too large
-    try {
-      const reader = new FileReader();
-      await new Promise((resolve, reject) => {
-        reader.onloadend = () => {
-          try {
-            localStorage.setItem(`audio_${callId}`, reader.result);
-            localStorage.setItem(`audio_${callId}_filename`, audioFile.name);
-            localStorage.setItem(`audio_${callId}_type`, audioFile.type);
-            resolve();
-          } catch (error) {
-            console.warn('Failed to save audio to localStorage, likely too large', error);
-            reject(error);
-          }
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(audioFile);
-      });
-    } catch (storageError) {
-      console.warn('Could not save to localStorage, file only downloaded:', storageError);
+    // Skip this step if the file is clearly too large (>5MB) to avoid unnecessary processing
+    if (audioFile.size < 5 * 1024 * 1024) {
+      try {
+        const reader = new FileReader();
+        await new Promise((resolve) => {
+          reader.onloadend = () => {
+            try {
+              localStorage.setItem(`audio_${callId}`, reader.result);
+              localStorage.setItem(`audio_${callId}_filename`, audioFile.name);
+              localStorage.setItem(`audio_${callId}_type`, audioFile.type);
+              console.log(`Audio file saved to localStorage for call ${callId}`);
+            } catch (error) {
+              console.log('Audio file too large for localStorage, continuing with other storage methods');
+            }
+            resolve(); // Always resolve, even if localStorage fails
+          };
+          reader.onerror = () => {
+            console.log('Error reading audio file, continuing with other storage methods');
+            resolve(); // Still resolve to continue processing
+          };
+          reader.readAsDataURL(audioFile);
+        });
+      } catch (storageError) {
+        console.log('Could not save to localStorage, continuing with other storage methods');
+      }
+    } else {
+      console.log('Audio file size exceeds localStorage capacity (>5MB), skipping localStorage storage');
     }
     
     // 3. Save metadata for project folder storage
