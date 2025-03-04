@@ -8,6 +8,7 @@
 :root {
   --primary-color: #4f46e5;
   --primary-hover: #4338ca;
+  --primary-light: #e0e7ff;
   --dark-bg: #ffffff; 
   --light-text: #f9fafb; 
   --secondary-bg: #1f2937;   
@@ -15,7 +16,8 @@
   --input-border: #4b5563;   
   --input-focus: #6366f1;   
   --error-color: #ef4444;    
-  --success-color: #10b981;  
+  --success-color: #10b981;
+  --heading-color: #000000;
 }
 
 body {

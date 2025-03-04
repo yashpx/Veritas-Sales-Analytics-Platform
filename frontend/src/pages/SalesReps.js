@@ -1,254 +1,560 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { 
-  Box, Paper, Typography, Table, TableBody, TableCell, 
-  TableContainer, TableHead, TableRow, Avatar, Chip, 
-  TextField, InputAdornment, LinearProgress
-} from '@mui/material';
-import SearchIcon from '@mui/icons-material/Search';
+import { createClient } from '@supabase/supabase-js';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
+import '../styles/salesreps.css';
 
-const MOCK_SALES_REPS = [
-  { 
-    id: 1, 
-    name: "John Davis", 
-    email: "john.davis@veritas.com", 
-    role: "Senior Sales Rep",
-    quota: 50000,
-    achieved: 42500,
-    performance: 85,
-    status: "active"
-  },
-  { 
-    id: 2, 
-    name: "Sarah Miller", 
-    email: "sarah.miller@veritas.com", 
-    role: "Sales Manager",
-    quota: 100000,
-    achieved: 92000,
-    performance: 92,
-    status: "active"
-  },
-  { 
-    id: 3, 
-    name: "Michael Johnson", 
-    email: "michael.johnson@veritas.com", 
-    role: "Junior Sales Rep",
-    quota: 30000,
-    achieved: 18000,
-    performance: 60,
-    status: "training"
-  },
-  { 
-    id: 4, 
-    name: "Emily Wilson", 
-    email: "emily.wilson@veritas.com", 
-    role: "Senior Sales Rep",
-    quota: 50000,
-    achieved: 52000,
-    performance: 104,
-    status: "active"
-  },
-  { 
-    id: 5, 
-    name: "Robert Brown", 
-    email: "robert.brown@veritas.com", 
-    role: "Sales Rep",
-    quota: 40000,
-    achieved: 38000,
-    performance: 95,
-    status: "active"
-  },
-  { 
-    id: 6, 
-    name: "Lisa Martinez", 
-    email: "lisa.martinez@veritas.com", 
-    role: "Senior Sales Rep",
-    quota: 50000,
-    achieved: 22000,
-    performance: 44,
-    status: "probation"
-  },
-  { 
-    id: 7, 
-    name: "Daniel Taylor", 
-    email: "daniel.taylor@veritas.com", 
-    role: "Sales Rep",
-    quota: 40000,
-    achieved: 41200,
-    performance: 103,
-    status: "active"
-  }
-];
+// Supabase configuration
+const supabaseUrl = 'https://coghrwmmyyzmbnndlawi.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvZ2hyd21teXl6bWJubmRsYXdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4OTcyMjUsImV4cCI6MjA1NjQ3MzIyNX0.WLm0l2UeFPiPNxyClnM4bQpxw4TcYFxleTdc7K0G6AM';
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 const SalesReps = () => {
   const { user } = useAuth();
+  
+  // State variables
   const [salesReps, setSalesReps] = useState([]);
-  const [filteredReps, setFilteredReps] = useState([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(true);
+  const [salesData, setSalesData] = useState([]);
+  const [selectedRep, setSelectedRep] = useState(null);
+  const [showSidebar, setShowSidebar] = useState(false);
+  const [isAddingRep, setIsAddingRep] = useState(false);
+  const [newRep, setNewRep] = useState({
+    sales_rep_first_name: '',
+    sales_rep_last_name: '',
+    'Phone Number': '',
+    'Email': ''
+  });
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [hoverRowId, setHoverRowId] = useState(null);
+  const [successMessage, setSuccessMessage] = useState('');
+  const [repTotalSales, setRepTotalSales] = useState({});
+  const [repTotalClients, setRepTotalClients] = useState({});
 
-  useEffect(() => {
-    // In a real application, fetch sales reps from your API
-    // For this demo, we'll use mock data
-    const fetchSalesReps = () => {
-      setLoading(true);
-      setTimeout(() => {
-        setSalesReps(MOCK_SALES_REPS);
-        setFilteredReps(MOCK_SALES_REPS);
-        setLoading(false);
-      }, 600);
-    };
+  // Generate a random color for avatars
+  const getAvatarColor = (name) => {
+    const colors = [
+      '#FF5733', '#33FF57', '#3357FF', '#F333FF', '#FF33F3',
+      '#33FFF3', '#F3FF33', '#9B33FF', '#FF9B33', '#33FF9B'
+    ];
+    
+    // Use the first character of the name to determine color index
+    const firstChar = (name || '').charAt(0).toLowerCase();
+    const colorIndex = firstChar.charCodeAt(0) % colors.length;
+    return colors[colorIndex];
+  };
 
-    if (user) {
+  // Show success message with timeout
+  const showSuccessMessage = (message) => {
+    setSuccessMessage(message);
+    setTimeout(() => {
+      setSuccessMessage('');
+    }, 3000);
+  };
+
+  // Fetch sales reps data from Supabase
+  const fetchSalesReps = async () => {
+    setIsLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('sales_reps')
+        .select('*')
+        .order('sales_rep_id', { ascending: true });
+
+      if (error) {
+        throw error;
+      }
+
+      setSalesReps(data);
+    } catch (error) {
+      console.error('Error fetching sales reps:', error);
+      setError('Failed to load sales representatives');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Fetch sales data from Supabase
+  const fetchSalesData = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('sales_data')
+        .select('*');
+
+      if (error) {
+        throw error;
+      }
+
+      setSalesData(data);
+      
+      // Calculate total sales for each rep
+      const salesByRep = {};
+      const clientsByRep = {};
+      
+      data.forEach(sale => {
+        // Sum up sales amounts
+        if (!salesByRep[sale.sales_rep_id]) {
+          salesByRep[sale.sales_rep_id] = 0;
+        }
+        salesByRep[sale.sales_rep_id] += parseFloat(sale.sale_amount);
+        
+        // Count unique clients
+        if (!clientsByRep[sale.sales_rep_id]) {
+          clientsByRep[sale.sales_rep_id] = new Set();
+        }
+        clientsByRep[sale.sales_rep_id].add(sale.customer_id);
+      });
+      
+      // Convert sets to counts for clients
+      const clientCounts = {};
+      Object.keys(clientsByRep).forEach(repId => {
+        clientCounts[repId] = clientsByRep[repId].size;
+      });
+      
+      setRepTotalSales(salesByRep);
+      setRepTotalClients(clientCounts);
+    } catch (error) {
+      console.error('Error fetching sales data:', error);
+    }
+  };
+
+  // Add a new sales rep
+  const addSalesRep = async () => {
+    try {
+      // Validate form
+      if (!newRep.sales_rep_first_name || !newRep.sales_rep_last_name || !newRep['Email']) {
+        alert('Please fill in all required fields');
+        return;
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(newRep['Email'])) {
+        alert('Please enter a valid email address');
+        return;
+      }
+
+      // Validate phone format if provided
+      if (newRep['Phone Number'] && !/^\d+$/.test(newRep['Phone Number'])) {
+        alert('Phone number should contain only digits');
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('sales_reps')
+        .insert([
+          {
+            sales_rep_first_name: newRep.sales_rep_first_name,
+            sales_rep_last_name: newRep.sales_rep_last_name,
+            'Phone Number': newRep['Phone Number'] ? parseInt(newRep['Phone Number']) : null,
+            'Email': newRep['Email']
+          }
+        ])
+        .select();
+
+      if (error) {
+        throw error;
+      }
+
+      // Reset form and refresh data
+      setNewRep({
+        sales_rep_first_name: '',
+        sales_rep_last_name: '',
+        'Phone Number': '',
+        'Email': ''
+      });
+      setIsAddingRep(false);
       fetchSalesReps();
+      showSuccessMessage('Sales representative added successfully!');
+    } catch (error) {
+      console.error('Error adding sales rep:', error);
+      alert(`Failed to add sales representative: ${error.message}`);
     }
-  }, [user]);
+  };
 
+  // Delete a sales rep
+  const deleteSalesRep = async (id) => {
+    if (!window.confirm('Are you sure you want to delete this sales representative?')) {
+      return;
+    }
+
+    try {
+      // Check if rep has associated sales data
+      const { data: salesData, error: salesError } = await supabase
+        .from('sales_data')
+        .select('sale_id')
+        .eq('sales_rep_id', id)
+        .limit(1);
+
+      if (salesError) throw salesError;
+
+      // If sales data exists, ask user if they want to proceed
+      if (salesData && salesData.length > 0) {
+        const confirmDelete = window.confirm(
+          'This sales representative has associated sales data. Deleting will not remove the sales records. Do you want to proceed?'
+        );
+        if (!confirmDelete) return;
+      }
+
+      const { error } = await supabase
+        .from('sales_reps')
+        .delete()
+        .eq('sales_rep_id', id);
+
+      if (error) {
+        throw error;
+      }
+
+      // Close sidebar if the deleted rep was selected
+      if (selectedRep && selectedRep.sales_rep_id === id) {
+        setShowSidebar(false);
+        setSelectedRep(null);
+      }
+
+      fetchSalesReps();
+      showSuccessMessage('Sales representative deleted successfully!');
+    } catch (error) {
+      console.error('Error deleting sales rep:', error);
+      alert(`Failed to delete sales representative: ${error.message}`);
+    }
+  };
+
+  // Handle viewing a sales rep
+  const handleViewRep = (rep) => {
+    setSelectedRep(rep);
+    setShowSidebar(true);
+  };
+
+  // Filter sales reps based on search term
+  const filteredReps = salesReps.filter(rep => {
+    const fullName = `${rep.sales_rep_first_name || ''} ${rep.sales_rep_last_name || ''}`.toLowerCase();
+    const email = (rep['Email'] || '').toLowerCase();
+    const search = searchTerm.toLowerCase();
+    
+    return fullName.includes(search) || email.includes(search);
+  });
+
+  // Get recent activity for a rep
+  const getRepActivity = (repId) => {
+    // Filter and sort sales data for this rep
+    const repSales = salesData
+      .filter(sale => sale.sales_rep_id === repId)
+      .sort((a, b) => new Date(b.sale_date) - new Date(a.sale_date));
+    
+    if (repSales.length === 0) return "No activity";
+    
+    // Get most recent sale date
+    const lastSaleDate = new Date(repSales[0].sale_date);
+    const today = new Date();
+    const diffTime = Math.abs(today - lastSaleDate);
+    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    if (diffDays === 0) return "Today";
+    if (diffDays === 1) return "Yesterday";
+    if (diffDays < 7) return `${diffDays} days ago`;
+    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+    return `${Math.floor(diffDays / 30)} months ago`;
+  };
+
+  // Format currency
+  const formatCurrency = (amount) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 2
+    }).format(amount);
+  };
+
+  // Effect to fetch data on component mount
   useEffect(() => {
-    if (searchQuery) {
-      const filtered = salesReps.filter(rep => 
-        rep.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        rep.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        rep.role.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setFilteredReps(filtered);
-    } else {
-      setFilteredReps(salesReps);
-    }
-  }, [searchQuery, salesReps]);
-
+    fetchSalesReps();
+    fetchSalesData();
+  }, []);
+  
   // If no user is logged in, redirect to login page
   if (!user) {
     return <Navigate to="/login" />;
   }
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'active':
-        return 'success';
-      case 'training':
-        return 'info';
-      case 'probation':
-        return 'warning';
-      default:
-        return 'default';
-    }
-  };
-
-  const getPerformanceColor = (performance) => {
-    if (performance >= 90) return '#4caf50';
-    if (performance >= 70) return '#ff9800';
-    return '#f44336';
-  };
-
   return (
     <DashboardLayout>
-      <Box sx={{ p: 3 }}>
-        <Typography variant="h4" fontWeight="bold" sx={{ mb: 3, color: 'var(--heading-color)' }}>
-          Sales Representatives
-        </Typography>
+      <div className={`sales-rep-container ${showSidebar ? 'with-sidebar' : ''}`}>
+        <div className="header">
+          <h1>Sales Rep List</h1>
+          <button className="add-rep-btn pulse-animation" onClick={() => setIsAddingRep(true)}>
+            + Add Rep
+          </button>
+        </div>
 
-        <Box sx={{ mb: 4 }}>
-          <TextField
-            fullWidth
-            variant="outlined"
-            placeholder="Search sales reps..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <SearchIcon />
-                </InputAdornment>
-              ),
-            }}
-            sx={{ 
-              maxWidth: 500,
-              '& .MuiOutlinedInput-root': {
-                borderRadius: 2,
-              }
-            }}
+        <div className="search-container">
+          <input
+            type="text"
+            placeholder="Search by name or email..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="search-input"
           />
-        </Box>
+          {searchTerm && (
+            <button className="clear-search" onClick={() => setSearchTerm('')}>×</button>
+          )}
+        </div>
 
-        <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Representative</TableCell>
-                <TableCell>Role</TableCell>
-                <TableCell>Status</TableCell>
-                <TableCell>Quota</TableCell>
-                <TableCell>Performance</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {loading ? (
-                <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
-                    Loading sales representatives...
-                  </TableCell>
-                </TableRow>
-              ) : filteredReps.length === 0 ? (
-                <TableRow>
-                  <TableCell colSpan={5} align="center" sx={{ py: 4 }}>
-                    No sales representatives found matching "{searchQuery}"
-                  </TableCell>
-                </TableRow>
-              ) : (
-                filteredReps.map((rep) => (
-                  <TableRow key={rep.id} hover>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                        <Avatar sx={{ mr: 2, bgcolor: 'var(--primary-light)' }}>
-                          {rep.name.charAt(0)}
-                        </Avatar>
-                        <Box>
-                          <Typography variant="body1">{rep.name}</Typography>
-                          <Typography variant="caption" color="text.secondary">{rep.email}</Typography>
-                        </Box>
-                      </Box>
-                    </TableCell>
-                    <TableCell>{rep.role}</TableCell>
-                    <TableCell>
-                      <Chip 
-                        label={rep.status} 
-                        color={getStatusColor(rep.status)}
-                        size="small"
-                        sx={{ textTransform: 'capitalize' }}
-                      />
-                    </TableCell>
-                    <TableCell>${rep.quota.toLocaleString()}</TableCell>
-                    <TableCell>
-                      <Box sx={{ display: 'flex', alignItems: 'center', minWidth: 150 }}>
-                        <Box sx={{ width: '100%', mr: 1 }}>
-                          <LinearProgress 
-                            variant="determinate" 
-                            value={Math.min(rep.performance, 100)} 
-                            sx={{ 
-                              height: 8, 
-                              borderRadius: 5,
-                              backgroundColor: 'rgba(0,0,0,0.1)',
-                              '& .MuiLinearProgress-bar': {
-                                backgroundColor: getPerformanceColor(rep.performance),
-                              }
+        {successMessage && (
+          <div className="success-message">
+            <span>✓</span> {successMessage}
+          </div>
+        )}
+
+        {isLoading ? (
+          <div className="loading">
+            <div className="loading-spinner"></div>
+            <p>Loading sales representatives...</p>
+          </div>
+        ) : error ? (
+          <div className="error">{error}</div>
+        ) : (
+          <div className="table-container">
+            {filteredReps.length === 0 ? (
+              <div className="no-results">
+                <p>No sales representatives found matching "{searchTerm}"</p>
+                <button className="clear-search-btn" onClick={() => setSearchTerm('')}>Clear Search</button>
+              </div>
+            ) : (
+              <table className="sales-rep-table">
+                <thead>
+                  <tr>
+                    <th className="name-col">Name</th>
+                    <th className="email-col">Email</th>
+                    <th className="phone-col">Phone number</th>
+                    <th className="sales-col">Total Sales</th>
+                    <th className="stats-col">Stats</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredReps.map((rep) => (
+                    <tr 
+                      key={rep.sales_rep_id} 
+                      onMouseEnter={() => setHoverRowId(rep.sales_rep_id)}
+                      onMouseLeave={() => setHoverRowId(null)}
+                      className={`${hoverRowId === rep.sales_rep_id ? 'row-hover' : ''} ${selectedRep?.sales_rep_id === rep.sales_rep_id ? 'row-selected' : ''}`}
+                    >
+                      <td className="name-cell">
+                        <div className="name-with-avatar">
+                          <div 
+                            className="avatar"
+                            style={{
+                              backgroundColor: getAvatarColor(`${rep.sales_rep_first_name} ${rep.sales_rep_last_name}`),
+                              color: 'white'
                             }}
-                          />
-                        </Box>
-                        <Box sx={{ minWidth: 35 }}>
-                          <Typography variant="body2" color="text.secondary">{`${rep.performance}%`}</Typography>
-                        </Box>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
-                ))
-              )}
-            </TableBody>
-          </Table>
-        </TableContainer>
-      </Box>
+                          >
+                            {rep.sales_rep_first_name?.charAt(0) || ''}
+                            {rep.sales_rep_last_name?.charAt(0) || ''}
+                          </div>
+                          <span className="rep-name-text">{`${rep.sales_rep_first_name || ''} ${rep.sales_rep_last_name || ''}`}</span>
+                        </div>
+                      </td>
+                      <td className="email-cell">{rep['Email']}</td>
+                      <td className="phone-cell">{rep['Phone Number'] ? `+${rep['Phone Number']}` : 'N/A'}</td>
+                      <td className="sales-cell">
+                        <div className="sales-amount">
+                          {repTotalSales[rep.sales_rep_id] 
+                            ? formatCurrency(repTotalSales[rep.sales_rep_id]) 
+                            : '$0.00'}
+                        </div>
+                      </td>
+                      <td>
+                        <button 
+                          className="view-btn" 
+                          onClick={() => handleViewRep(rep)}
+                        >
+                          View
+                        </button>
+                      </td>
+                      <td>
+                        <div className="actions">
+                          <div className="dropdown">
+                            <button className="menu-btn">⋯</button>
+                            <div className="dropdown-content">
+                              <button onClick={() => handleViewRep(rep)}>View Details</button>
+                              <button onClick={() => deleteSalesRep(rep.sales_rep_id)} className="delete-option">Delete</button>
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )}
+
+        {/* Sidebar for viewing rep details */}
+        {showSidebar && selectedRep && (
+          <div className="sidebar slide-in">
+            <div className="sidebar-content">
+              <div className="sidebar-header">
+                <div 
+                  className="large-avatar"
+                  style={{
+                    backgroundColor: getAvatarColor(`${selectedRep.sales_rep_first_name} ${selectedRep.sales_rep_last_name}`),
+                    color: 'white'
+                  }}
+                >
+                  {selectedRep.sales_rep_first_name?.charAt(0) || ''}
+                  {selectedRep.sales_rep_last_name?.charAt(0) || ''}
+                </div>
+                <div className="rep-name">
+                  <h2>{`${selectedRep.sales_rep_first_name || ''} ${selectedRep.sales_rep_last_name || ''}`}</h2>
+                  <p>Sales Rep</p>
+                </div>
+                <button className="close-btn" onClick={() => setShowSidebar(false)}>×</button>
+              </div>
+
+              <div className="sidebar-actions">
+                <button className="edit-btn">
+                  <span className="icon">✏️</span> Edit
+                </button>
+                <button className="delete-btn" onClick={() => deleteSalesRep(selectedRep.sales_rep_id)}>
+                  <span className="icon">🗑️</span> Delete
+                </button>
+              </div>
+
+              <div className="contact-info">
+                <h3>Contact Info</h3>
+                
+                <div className="contact-item">
+                  <span className="icon email-icon">✉️</span>
+                  <p>{selectedRep['Email'] || 'No email available'}</p>
+                </div>
+                
+                <div className="contact-item">
+                  <span className="icon phone-icon">📞</span>
+                  <p>{selectedRep['Phone Number'] ? `+${selectedRep['Phone Number']}` : 'No phone available'}</p>
+                </div>
+              </div>
+
+              <div className="rep-summary">
+                <h3>Summary</h3>
+                <div className="summary-items">
+                  <div className="summary-item">
+                    <div className="summary-value highlight-value">
+                      {repTotalSales[selectedRep.sales_rep_id] 
+                        ? formatCurrency(repTotalSales[selectedRep.sales_rep_id]) 
+                        : '$0.00'}
+                    </div>
+                    <div className="summary-label">Total Sales</div>
+                  </div>
+                  <div className="summary-item">
+                    <div className="summary-value">
+                      {repTotalClients[selectedRep.sales_rep_id] || 0}
+                    </div>
+                    <div className="summary-label">Clients</div>
+                  </div>
+                  <div className="summary-item">
+                    <div className="summary-value">
+                      {getRepActivity(selectedRep.sales_rep_id)}
+                    </div>
+                    <div className="summary-label">Last Activity</div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Recent Sales Section */}
+              <div className="recent-sales">
+                <h3>Recent Sales</h3>
+                {salesData.filter(sale => sale.sales_rep_id === selectedRep.sales_rep_id)
+                  .sort((a, b) => new Date(b.sale_date) - new Date(a.sale_date))
+                  .slice(0, 5)
+                  .map(sale => (
+                    <div key={sale.sale_id} className="recent-sale-item">
+                      <div className="sale-header">
+                        <div className="sale-date">{new Date(sale.sale_date).toLocaleDateString()}</div>
+                        <div className="sale-amount">{formatCurrency(sale.sale_amount)}</div>
+                      </div>
+                      <div className="sale-product">
+                        <span>{sale.product_name}</span>
+                        <span className="sale-quantity">× {sale.quantity_sold}</span>
+                      </div>
+                      <div className="sale-customer">
+                        Customer: {sale.customer_first_name} {sale.customer_last_name}
+                      </div>
+                    </div>
+                  ))}
+                {salesData.filter(sale => sale.sales_rep_id === selectedRep.sales_rep_id).length === 0 && (
+                  <div className="no-sales">No sales data available for this representative</div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Add Rep Modal */}
+        {isAddingRep && (
+          <div className="modal-overlay" onClick={(e) => {
+            if (e.target.className === 'modal-overlay') setIsAddingRep(false);
+          }}>
+            <div className="add-rep-modal slide-up">
+              <div className="modal-header">
+                <h2>Add New Sales Representative</h2>
+                <button className="close-modal-btn" onClick={() => setIsAddingRep(false)}>×</button>
+              </div>
+              <div className="form-group">
+                <label>First Name <span className="required">*</span></label>
+                <input
+                  type="text"
+                  value={newRep.sales_rep_first_name}
+                  onChange={(e) => setNewRep({...newRep, sales_rep_first_name: e.target.value})}
+                  placeholder="First Name"
+                  required
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label>Last Name <span className="required">*</span></label>
+                <input
+                  type="text"
+                  value={newRep.sales_rep_last_name}
+                  onChange={(e) => setNewRep({...newRep, sales_rep_last_name: e.target.value})}
+                  placeholder="Last Name"
+                  required
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label>Email <span className="required">*</span></label>
+                <input
+                  type="email"
+                  value={newRep['Email']}
+                  onChange={(e) => setNewRep({...newRep, 'Email': e.target.value})}
+                  placeholder="Email"
+                  required
+                  className="form-input"
+                />
+              </div>
+              <div className="form-group">
+                <label>Phone Number</label>
+                <input
+                  type="tel"
+                  value={newRep['Phone Number']}
+                  onChange={(e) => setNewRep({...newRep, 'Phone Number': e.target.value})}
+                  placeholder="Phone Number (numbers only)"
+                  className="form-input"
+                />
+              </div>
+              <div className="modal-actions">
+                <button className="cancel-btn" onClick={() => setIsAddingRep(false)}>Cancel</button>
+                <button className="save-btn" onClick={addSalesRep}>
+                  <span className="save-icon">💾</span> Save
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
     </DashboardLayout>
   );
 };
