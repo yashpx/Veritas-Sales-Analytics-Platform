@@ -16,6 +16,7 @@ A comprehensive platform for secure authentication and data analytics, built wit
 - Sales KPI dashboard with real-time metrics
 - Interactive charts and visualizations
 - Call tracking and management
+- Call recording transcription and speaker diarization
 - Customer relationship management
 - Sales rep performance monitoring
 - Notifications system
@@ -28,6 +29,7 @@ A comprehensive platform for secure authentication and data analytics, built wit
 - Lazy-loaded routes for optimal performance
 - Centralized state management with React Context
 - Error handling and validation
+- AI-powered audio transcription using Groq API
 
 ## Project Structure
 
@@ -70,6 +72,7 @@ authenticate/
 - Recharts for data visualization
 - Supabase JS client
 - Axios for API requests
+- Groq API for AI audio transcription
 
 ### Backend
 - Python 3.8+
@@ -90,6 +93,7 @@ authenticate/
 - npm or yarn
 - Python 3.8+
 - Supabase account
+- Groq API key (for transcription features)
 
 ### Backend Setup
 
@@ -128,10 +132,11 @@ authenticate/
    npm install
    ```
 
-3. Create a `.env` file based on `.env.example` with your Supabase credentials:
+3. Create a `.env` file based on `.env.example` with your Supabase and Groq credentials:
    ```
    REACT_APP_SUPABASE_URL=your_supabase_url
    REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
+   REACT_APP_GROQ_API_KEY=your_groq_api_key
    ```
 
 4. Start the development server:
@@ -166,6 +171,12 @@ authenticate/
 - Interact with charts and tables to filter data
 - Access detailed reports in the Analytics section
 
+### Call Transcription
+- Upload call recordings from the Call Records page
+- Process audio to generate transcriptions with speaker diarization
+- View synchronized transcripts with the audio playback
+- Highlighted text indicates current speech parts during playback
+
 ### Administration
 - Manage user profiles in the Settings page
 - Update notification preferences
@@ -198,3 +209,4 @@ This project is licensed under the MIT License.
 - [React](https://reactjs.org/) for the frontend library
 - [Material UI](https://mui.com/) for the UI components
 - [Recharts](https://recharts.org/) for the charting library
+- [Groq API](https://groq.com/) for the AI transcription and diarization services

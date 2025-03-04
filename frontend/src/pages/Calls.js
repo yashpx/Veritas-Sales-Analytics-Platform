@@ -1,82 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, Link } from 'react-router-dom';
 import { 
   Box, Paper, Typography, Table, TableBody, TableCell, 
-  TableContainer, TableHead, TableRow, Chip, 
-  TextField, InputAdornment, IconButton
+  TableContainer, TableHead, TableRow, 
+  TextField, InputAdornment, IconButton, CircularProgress, Alert
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import DownloadIcon from '@mui/icons-material/Download';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import MicIcon from '@mui/icons-material/Mic';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
+import { fetchCallLogs } from '../utils/callsService';
 import '../styles/dashboard.css';
-
-const MOCK_CALLS = [
-  { 
-    id: 1, 
-    date: "2023-12-28", 
-    client: "Acme Corporation", 
-    salesRep: "John Davis",
-    duration: 32,
-    outcome: "Closed",
-    notes: "Client agreed to purchase 50 units. Follow-up with contract next week."
-  },
-  { 
-    id: 2, 
-    date: "2023-12-27", 
-    client: "Global Industries", 
-    salesRep: "Sarah Miller",
-    duration: 45,
-    outcome: "In-progress",
-    notes: "Discussed pricing options. Client interested but needs time to consider."
-  },
-  { 
-    id: 3, 
-    date: "2023-12-26", 
-    client: "Tech Solutions", 
-    salesRep: "Michael Johnson",
-    duration: 15,
-    outcome: "Failed",
-    notes: "Client not interested in our product. Found competitor with lower pricing."
-  },
-  { 
-    id: 4, 
-    date: "2023-12-24", 
-    client: "Innovative Startups", 
-    salesRep: "Emily Wilson",
-    duration: 28,
-    outcome: "Closed",
-    notes: "Demo went well. Client purchased premium package for 12 months."
-  },
-  { 
-    id: 5, 
-    date: "2023-12-23", 
-    client: "Global Enterprises", 
-    salesRep: "Robert Brown",
-    duration: 18,
-    outcome: "In-progress",
-    notes: "Client liked product demo. Requested formal quote and ROI analysis."
-  },
-  { 
-    id: 6, 
-    date: "2023-12-22", 
-    client: "Modern Solutions", 
-    salesRep: "Lisa Martinez",
-    duration: 22,
-    outcome: "Closed",
-    notes: "Closed deal with 20% discount for first year. Client signed 2-year contract."
-  },
-  { 
-    id: 7, 
-    date: "2023-12-21", 
-    client: "Best Systems", 
-    salesRep: "Daniel Taylor",
-    duration: 12,
-    outcome: "Failed",
-    notes: "Client budget constraints. Will follow up next quarter."
-  }
-];
 
 const Calls = () => {
   const { user } = useAuth();
@@ -84,21 +20,27 @@ const Calls = () => {
   const [filteredCalls, setFilteredCalls] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
-    // In a real application, fetch calls from your API
-    // For this demo, we'll use mock data
-    const fetchCalls = () => {
-      setLoading(true);
-      setTimeout(() => {
-        setCalls(MOCK_CALLS);
-        setFilteredCalls(MOCK_CALLS);
+    // Fetch calls from Supabase
+    const getCalls = async () => {
+      try {
+        setLoading(true);
+        setError(null);
+        const callData = await fetchCallLogs();
+        setCalls(callData);
+        setFilteredCalls(callData);
         setLoading(false);
-      }, 600);
+      } catch (err) {
+        console.error('Error fetching calls:', err);
+        setError('Failed to load call records. Please try again later.');
+        setLoading(false);
+      }
     };
 
     if (user) {
-      fetchCalls();
+      getCalls();
     }
   }, [user]);
 
@@ -121,6 +63,7 @@ const Calls = () => {
   }
 
   const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
     const options = { year: 'numeric', month: 'short', day: 'numeric' };
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
@@ -167,6 +110,12 @@ const Calls = () => {
           />
         </Box>
 
+        {error && (
+          <Alert severity="error" sx={{ mb: 3 }}>
+            {error}
+          </Alert>
+        )}
+
         <TableContainer component={Paper} sx={{ borderRadius: 2, boxShadow: '0 4px 15px rgba(0,0,0,0.1)' }}>
           <Table>
             <TableHead>
@@ -183,13 +132,17 @@ const Calls = () => {
               {loading ? (
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
+                    <CircularProgress size={30} sx={{ color: 'var(--primary-color)', mr: 2 }} />
                     Loading call records...
                   </TableCell>
                 </TableRow>
               ) : filteredCalls.length === 0 ? (
                 <TableRow>
                   <TableCell colSpan={6} align="center" sx={{ py: 4 }}>
-                    No call records found matching "{searchQuery}"
+                    {searchQuery 
+                      ? `No call records found matching "${searchQuery}"`
+                      : 'No call records available'
+                    }
                   </TableCell>
                 </TableRow>
               ) : (
@@ -205,14 +158,30 @@ const Calls = () => {
                       </span>
                     </TableCell>
                     <TableCell align="center">
-                      <IconButton 
-                        size="small" 
-                        aria-label="view" 
-                        title="View details"
-                        sx={{ color: 'var(--primary-color)' }}
-                      >
-                        <VisibilityIcon fontSize="small" />
-                      </IconButton>
+                      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
+                        <IconButton 
+                          size="small" 
+                          aria-label="view" 
+                          title="View details"
+                          sx={{ color: 'var(--primary-color)', mr: 1 }}
+                        >
+                          <VisibilityIcon fontSize="small" />
+                        </IconButton>
+                        <IconButton 
+                          size="small" 
+                          aria-label="transcribe" 
+                          title="View/Create Transcription"
+                          component={Link}
+                          to="/dashboard/call-transcription"
+                          state={{ callData: call }}
+                          sx={{ 
+                            color: '#4A90E2',
+                            '&:hover': { color: '#2A7DE1' } 
+                          }}
+                        >
+                          <MicIcon fontSize="small" />
+                        </IconButton>
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))
