@@ -34,7 +34,7 @@ const Navbar = () => {
       <div className="container">
         <Link to="/" className="navbar-brand">
           <img src="/assets/Logo.png" alt="Logo" />
-          <span>AuthSystem</span>
+          <span>Veritas</span>
         </Link>
         <div className="navbar-links">
           {user ? (

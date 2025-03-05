@@ -107,6 +107,8 @@
 .dashboard-main {
   display: flex;
   gap: 24px;
+  height: calc(100vh - 200px); /* Adjust height to fit viewport minus header and summary */
+  overflow: hidden;
 }
 
 .left-column {
@@ -114,6 +116,8 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  overflow-y: auto;
+  padding-right: 10px;
 }
 
 .right-column {
@@ -121,6 +125,8 @@
   display: flex;
   flex-direction: column;
   gap: 24px;
+  overflow-y: auto;
+  padding-right: 10px;
 }
 
 .top-sales-section, 
@@ -131,6 +137,12 @@
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+/* Reduce height of top sales section */
+.top-sales-section {
+  max-height: 280px;
+  overflow-y: auto;
 }
 
 .section-header {
@@ -212,8 +224,25 @@ td {
   font-weight: 500;
 }
 
+.recent-calls-section {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
 .recent-calls-section h2 {
   margin-bottom: 16px;
+}
+
+.recent-calls-table {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.recent-calls-table tbody {
+  flex-grow: 1;
+  overflow-y: auto;
 }
 
 .status-badge {

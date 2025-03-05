@@ -272,12 +272,12 @@ const Customers = () => {
           <>
             <div className="contacts-section">
               <div className="contacts-header">
-                <div>
+                <div className="header-content">
                   <h1>Contacts</h1>
                   <p>{contacts.length} Total Contacts</p>
                 </div>
-                <button className="add-contact-button" onClick={handleAddContactClick}>
-                  <Plus size={18} />
+                <button className="add-contact-button compact" onClick={handleAddContactClick}>
+                  <Plus size={16} />
                   Add Contact
                 </button>
               </div>

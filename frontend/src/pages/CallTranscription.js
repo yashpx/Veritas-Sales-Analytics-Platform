@@ -532,20 +532,13 @@ const CallTranscription = () => {
     <DashboardLayout>
       <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: '100%', overflow: 'hidden' }}>
         {/* Header with back button and title */}
-        <Box sx={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          mb: 4, 
-          pb: 2, 
-          borderBottom: '1px solid #e0e0e0',
-          width: '100%'
-        }}>
+        {/* Back to Calls button at top left */}
+        <Box sx={{ mb: 2 }}>
           <Button
             variant="contained"
             startIcon={<ArrowBackIcon />}
             onClick={() => navigate('/dashboard/calls')}
             sx={{
-              mr: 3,
               bgcolor: 'var(--primary-color)',
               fontWeight: 500,
               boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
@@ -554,12 +547,25 @@ const CallTranscription = () => {
                 boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
               },
               textTransform: 'none',
-              borderRadius: '8px',
-              padding: '8px 16px'
+              borderRadius: '6px',
+              padding: '6px 12px',
+              fontSize: '0.85rem',
+              width: 'auto',
+              display: 'inline-flex',
+              flexShrink: 0
             }}
           >
             Back to Calls
           </Button>
+        </Box>
+
+        {/* Header with title */}
+        <Box sx={{ 
+          mb: 4, 
+          pb: 2, 
+          borderBottom: '1px solid #e0e0e0',
+          width: '100%'
+        }}>
           <Box>
             <Typography 
               variant="h4" 

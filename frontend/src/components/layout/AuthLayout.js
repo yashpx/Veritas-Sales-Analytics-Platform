@@ -9,7 +9,7 @@ const AuthLayout = ({ children, illustrationSrc, heading, video = false }) => {
         <div className="auth-layout-content">
           <div className="auth-layout-logo">
             <img src="/assets/Logo.png" alt="Logo" />
-            <span>AuthSystem</span>
+            <span>Veritas</span>
           </div>
           
           {heading && <h2 style={{ marginBottom: '1.5rem', fontWeight: '600' }}>{heading}</h2>}
