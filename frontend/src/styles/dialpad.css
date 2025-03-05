@@ -63,37 +63,48 @@
   margin-bottom: 24px;
   display: flex;
   align-items: center;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background-color: var(--input-bg);
+  overflow: hidden;
 }
 
 .phone-input {
-  width: 100%;
+  width: calc(100% - 40px);
   padding: 16px;
   font-size: 24px;
   text-align: center;
   letter-spacing: 1px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background-color: var(--input-bg);
+  border: none;
+  background-color: transparent;
   color: var(--text-primary);
   font-family: monospace;
+  outline: none;
 }
 
 .backspace-button {
-  position: absolute;
-  right: 12px;
-  background: transparent;
+  width: 40px;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.02);
   border: none;
   color: var(--text-secondary);
   font-size: 20px;
   cursor: pointer;
-  padding: 5px;
+  padding: 0;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-left: 1px solid rgba(0, 0, 0, 0.05);
+  transition: all 0.2s ease;
 }
 
 .backspace-button:hover {
   color: var(--text-primary);
+  background-color: rgba(0, 0, 0, 0.05);
+}
+
+.backspace-button:active {
+  background-color: rgba(0, 0, 0, 0.1);
 }
 
 .dialpad-grid {
