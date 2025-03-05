@@ -355,6 +355,8 @@
   min-width: 0;
   transition: all 0.3s;
   border-right: 1px solid #e1e4e8;
+  overflow-y: auto;
+  max-height: calc(100vh - 80px); /* Adjust based on your header height */
 }
 
 .contact-detail-panel {
@@ -363,6 +365,9 @@
   padding: 20px;
   background-color: white;
   overflow-y: auto;
+  position: sticky;
+  top: 0;
+  height: calc(100vh - 80px); /* Match the height of the list view */
 }
 
 .contact-detail-header {

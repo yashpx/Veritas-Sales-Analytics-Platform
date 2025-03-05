@@ -1,17 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Navigate } from 'react-router-dom';
-import { createClient } from '@supabase/supabase-js';
 import { Phone, Mail, ChevronLeft, Edit, Search, Plus, X, User, Briefcase, FileText, Trash2 } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
+import supabase from '../utils/supabaseClient';
 import '../styles/calls.css';
 
 // This is the former Calls.js file content, moved to replace Customers.js
 // Now when users navigate to Customers section, they'll see the contacts functionality
-
-const supabaseUrl = 'https://coghrwmmyyzmbnndlawi.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvZ2hyd21teXl6bWJubmRsYXdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4OTcyMjUsImV4cCI6MjA1NjQ3MzIyNX0.WLm0l2UeFPiPNxyClnM4bQpxw4TcYFxleTdc7K0G6AM';
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 const Customers = () => {
   const { user } = useAuth();
