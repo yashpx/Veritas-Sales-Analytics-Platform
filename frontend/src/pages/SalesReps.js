@@ -3,6 +3,20 @@ import { Navigate } from 'react-router-dom';
 import { createClient } from '@supabase/supabase-js';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
+import { 
+  Phone, 
+  Mail, 
+  X, 
+  User, 
+  ChevronRight, 
+  Calendar, 
+  Award, 
+  DollarSign, 
+  UserCheck,
+  BarChart2,
+  Edit,
+  Trash2
+} from 'lucide-react';
 import '../styles/salesreps.css';
 
 // Supabase configuration
@@ -36,8 +50,11 @@ const SalesReps = () => {
   // Generate a random color for avatars
   const getAvatarColor = (name) => {
     const colors = [
-      '#FF5733', '#33FF57', '#3357FF', '#F333FF', '#FF33F3',
-      '#33FFF3', '#F3FF33', '#9B33FF', '#FF9B33', '#33FF9B'
+      '#5a2ca0', // Primary purple - use this most often
+      '#6D3EB7', // Lighter purple
+      '#501F8C', // Darker purple
+      '#7248C7', // Another purple shade
+      '#4A1D85'  // Deep purple
     ];
     
     // Use the first character of the name to determine color index
@@ -236,34 +253,14 @@ const SalesReps = () => {
     return fullName.includes(search) || email.includes(search);
   });
 
-  // Get recent activity for a rep
-  const getRepActivity = (repId) => {
-    // Filter and sort sales data for this rep
-    const repSales = salesData
-      .filter(sale => sale.sales_rep_id === repId)
-      .sort((a, b) => new Date(b.sale_date) - new Date(a.sale_date));
-    
-    if (repSales.length === 0) return "No activity";
-    
-    // Get most recent sale date
-    const lastSaleDate = new Date(repSales[0].sale_date);
-    const today = new Date();
-    const diffTime = Math.abs(today - lastSaleDate);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    
-    if (diffDays === 0) return "Today";
-    if (diffDays === 1) return "Yesterday";
-    if (diffDays < 7) return `${diffDays} days ago`;
-    if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
-    return `${Math.floor(diffDays / 30)} months ago`;
-  };
-
   // Format currency
   const formatCurrency = (amount) => {
+    if (!amount && amount !== 0) return '$0';
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
-      minimumFractionDigits: 2
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
     }).format(amount);
   };
 
@@ -278,27 +275,37 @@ const SalesReps = () => {
     return <Navigate to="/login" />;
   }
 
+  const formatPhone = (phone) => {
+    if (!phone) return 'N/A';
+    const phoneStr = phone.toString();
+    return `+${phoneStr}`;
+  };
+  
+  // Get the total clients count for a sales rep
+  const getClientCount = (repId) => {
+    return repTotalClients[repId] || 0;
+  };
+  
+  // Handle close sidebar
+  const handleCloseSidebar = () => {
+    setShowSidebar(false);
+    setSelectedRep(null);
+  };
+  
+  // Make table row clickable to view rep details
+  const handleRowClick = (rep) => {
+    setSelectedRep(rep);
+    setShowSidebar(true);
+  };
+
   return (
     <DashboardLayout>
       <div className={`sales-rep-container ${showSidebar ? 'with-sidebar' : ''}`}>
         <div className="header">
           <h1>Sales Rep List</h1>
-          <button className="add-rep-btn pulse-animation" onClick={() => setIsAddingRep(true)}>
-            + Add Rep
+          <button className="add-rep-btn compact" onClick={() => setIsAddingRep(true)}>
+            +Add Rep
           </button>
-        </div>
-
-        <div className="search-container">
-          <input
-            type="text"
-            placeholder="Search by name or email..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="search-input"
-          />
-          {searchTerm && (
-            <button className="clear-search" onClick={() => setSearchTerm('')}>×</button>
-          )}
         </div>
 
         {successMessage && (
@@ -325,11 +332,10 @@ const SalesReps = () => {
               <table className="sales-rep-table">
                 <thead>
                   <tr>
-                    <th className="name-col">Name</th>
-                    <th className="email-col">Email</th>
-                    <th className="phone-col">Phone number</th>
-                    <th className="sales-col">Total Sales</th>
-                    <th className="stats-col">Stats</th>
+                    <th className="name-col">Name <span>▾</span></th>
+                    <th className="email-col">Email <span>▾</span></th>
+                    <th className="phone-col">Phone number <span>▾</span></th>
+                    <th className="stats-col">Stats <span>▾</span></th>
                     <th></th>
                   </tr>
                 </thead>
@@ -340,14 +346,15 @@ const SalesReps = () => {
                       onMouseEnter={() => setHoverRowId(rep.sales_rep_id)}
                       onMouseLeave={() => setHoverRowId(null)}
                       className={`${hoverRowId === rep.sales_rep_id ? 'row-hover' : ''} ${selectedRep?.sales_rep_id === rep.sales_rep_id ? 'row-selected' : ''}`}
+                      onClick={() => handleRowClick(rep)}
+                      style={{ cursor: 'pointer' }}
                     >
                       <td className="name-cell">
                         <div className="name-with-avatar">
                           <div 
                             className="avatar"
                             style={{
-                              backgroundColor: getAvatarColor(`${rep.sales_rep_first_name} ${rep.sales_rep_last_name}`),
-                              color: 'white'
+                              backgroundColor: getAvatarColor(`${rep.sales_rep_first_name} ${rep.sales_rep_last_name}`)
                             }}
                           >
                             {rep.sales_rep_first_name?.charAt(0) || ''}
@@ -357,18 +364,14 @@ const SalesReps = () => {
                         </div>
                       </td>
                       <td className="email-cell">{rep['Email']}</td>
-                      <td className="phone-cell">{rep['Phone Number'] ? `+${rep['Phone Number']}` : 'N/A'}</td>
-                      <td className="sales-cell">
-                        <div className="sales-amount">
-                          {repTotalSales[rep.sales_rep_id] 
-                            ? formatCurrency(repTotalSales[rep.sales_rep_id]) 
-                            : '$0.00'}
-                        </div>
-                      </td>
+                      <td className="phone-cell">{formatPhone(rep['Phone Number'])}</td>
                       <td>
                         <button 
                           className="view-btn" 
-                          onClick={() => handleViewRep(rep)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleViewRep(rep);
+                          }}
                         >
                           View
                         </button>
@@ -376,10 +379,19 @@ const SalesReps = () => {
                       <td>
                         <div className="actions">
                           <div className="dropdown">
-                            <button className="menu-btn">⋯</button>
+                            <button 
+                              className="menu-btn"
+                              onClick={(e) => e.stopPropagation()}
+                            >⋯</button>
                             <div className="dropdown-content">
                               <button onClick={() => handleViewRep(rep)}>View Details</button>
-                              <button onClick={() => deleteSalesRep(rep.sales_rep_id)} className="delete-option">Delete</button>
+                              <button 
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteSalesRep(rep.sales_rep_id);
+                                }} 
+                                className="delete-option"
+                              >Delete</button>
                             </div>
                           </div>
                         </div>
@@ -392,105 +404,141 @@ const SalesReps = () => {
           </div>
         )}
 
-        {/* Sidebar for viewing rep details */}
-        {showSidebar && selectedRep && (
-          <div className="sidebar slide-in">
-            <div className="sidebar-content">
+        {/* Sales Rep Detail Sidebar */}
+        <div className={`rep-detail-sidebar ${showSidebar ? 'show' : ''}`}>
+          {selectedRep && (
+            <>
               <div className="sidebar-header">
+                <h3 className="sidebar-title">Rep Details</h3>
+                <button className="close-sidebar" onClick={handleCloseSidebar}>
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="rep-profile">
                 <div 
-                  className="large-avatar"
+                  className="rep-avatar"
                   style={{
-                    backgroundColor: getAvatarColor(`${selectedRep.sales_rep_first_name} ${selectedRep.sales_rep_last_name}`),
-                    color: 'white'
+                    backgroundColor: getAvatarColor(`${selectedRep.sales_rep_first_name} ${selectedRep.sales_rep_last_name}`)
                   }}
                 >
                   {selectedRep.sales_rep_first_name?.charAt(0) || ''}
                   {selectedRep.sales_rep_last_name?.charAt(0) || ''}
                 </div>
-                <div className="rep-name">
-                  <h2>{`${selectedRep.sales_rep_first_name || ''} ${selectedRep.sales_rep_last_name || ''}`}</h2>
-                  <p>Sales Rep</p>
-                </div>
-                <button className="close-btn" onClick={() => setShowSidebar(false)}>×</button>
-              </div>
-
-              <div className="sidebar-actions">
-                <button className="edit-btn">
-                  <span className="icon">✏️</span> Edit
-                </button>
-                <button className="delete-btn" onClick={() => deleteSalesRep(selectedRep.sales_rep_id)}>
-                  <span className="icon">🗑️</span> Delete
-                </button>
-              </div>
-
-              <div className="contact-info">
-                <h3>Contact Info</h3>
+                <h2 className="rep-name">{`${selectedRep.sales_rep_first_name || ''} ${selectedRep.sales_rep_last_name || ''}`}</h2>
+                <p className="rep-title">Sales Representative</p>
                 
-                <div className="contact-item">
-                  <span className="icon email-icon">✉️</span>
-                  <p>{selectedRep['Email'] || 'No email available'}</p>
+                <div className="rep-stats">
+                  <div className="stat-item">
+                    <div className="stat-value">{getClientCount(selectedRep.sales_rep_id)}</div>
+                    <div className="stat-label">Clients</div>
+                  </div>
+                  <div className="stat-item">
+                    <div className="stat-value">{formatCurrency(repTotalSales[selectedRep.sales_rep_id] || 0)}</div>
+                    <div className="stat-label">Total Sales</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="rep-details">
+                <div className="detail-section">
+                  <h4 className="section-title">
+                    <User size={16} />
+                    Contact Information
+                  </h4>
+                  <ul className="detail-list">
+                    <li className="detail-item">
+                      <Mail className="detail-icon" size={16} />
+                      <div className="detail-content">
+                        <div className="detail-label">Email</div>
+                        <div className="detail-value">{selectedRep['Email'] || 'Not provided'}</div>
+                      </div>
+                    </li>
+                    <li className="detail-item">
+                      <Phone className="detail-icon" size={16} />
+                      <div className="detail-content">
+                        <div className="detail-label">Phone</div>
+                        <div className="detail-value">{formatPhone(selectedRep['Phone Number'])}</div>
+                      </div>
+                    </li>
+                  </ul>
                 </div>
                 
-                <div className="contact-item">
-                  <span className="icon phone-icon">📞</span>
-                  <p>{selectedRep['Phone Number'] ? `+${selectedRep['Phone Number']}` : 'No phone available'}</p>
-                </div>
-              </div>
-
-              <div className="rep-summary">
-                <h3>Summary</h3>
-                <div className="summary-items">
-                  <div className="summary-item">
-                    <div className="summary-value highlight-value">
-                      {repTotalSales[selectedRep.sales_rep_id] 
-                        ? formatCurrency(repTotalSales[selectedRep.sales_rep_id]) 
-                        : '$0.00'}
+                <div className="detail-section">
+                  <h4 className="section-title">
+                    <BarChart2 size={16} />
+                    Performance Metrics
+                  </h4>
+                  
+                  <div className="performance-card">
+                    <h5 className="performance-title">Sales Overview</h5>
+                    <div className="performance-stat">
+                      <div className="performance-label">Total Sales</div>
+                      <div className="performance-value">{formatCurrency(repTotalSales[selectedRep.sales_rep_id] || 0)}</div>
                     </div>
-                    <div className="summary-label">Total Sales</div>
-                  </div>
-                  <div className="summary-item">
-                    <div className="summary-value">
-                      {repTotalClients[selectedRep.sales_rep_id] || 0}
+                    <div className="performance-stat">
+                      <div className="performance-label">Clients</div>
+                      <div className="performance-value">{getClientCount(selectedRep.sales_rep_id)}</div>
                     </div>
-                    <div className="summary-label">Clients</div>
-                  </div>
-                  <div className="summary-item">
-                    <div className="summary-value">
-                      {getRepActivity(selectedRep.sales_rep_id)}
+                    <div className="performance-stat">
+                      <div className="performance-label">Avg. Sale Value</div>
+                      <div className="performance-value">
+                        {getClientCount(selectedRep.sales_rep_id) > 0 
+                          ? formatCurrency((repTotalSales[selectedRep.sales_rep_id] || 0) / getClientCount(selectedRep.sales_rep_id)) 
+                          : '$0'}
+                      </div>
                     </div>
-                    <div className="summary-label">Last Activity</div>
                   </div>
                 </div>
+                
+                <div className="detail-section">
+                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
+                    <button 
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        backgroundColor: '#f0f2f5',
+                        border: '1px solid #e1e4e8',
+                        borderRadius: '6px',
+                        padding: '8px 12px',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        color: '#555',
+                        transition: 'all 0.2s',
+                      }}
+                    >
+                      <Edit size={14} />
+                      Edit Details
+                    </button>
+                    <button 
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        backgroundColor: '#fee2e2',
+                        border: '1px solid #fecaca',
+                        borderRadius: '6px',
+                        padding: '8px 12px',
+                        fontSize: '14px',
+                        cursor: 'pointer',
+                        color: '#b91c1c',
+                        transition: 'all 0.2s',
+                      }}
+                      onClick={() => {
+                        deleteSalesRep(selectedRep.sales_rep_id);
+                        handleCloseSidebar();
+                      }}
+                    >
+                      <Trash2 size={14} />
+                      Delete Rep
+                    </button>
+                  </div>
+                </div>
               </div>
-
-              {/* Recent Sales Section */}
-              <div className="recent-sales">
-                <h3>Recent Sales</h3>
-                {salesData.filter(sale => sale.sales_rep_id === selectedRep.sales_rep_id)
-                  .sort((a, b) => new Date(b.sale_date) - new Date(a.sale_date))
-                  .slice(0, 5)
-                  .map(sale => (
-                    <div key={sale.sale_id} className="recent-sale-item">
-                      <div className="sale-header">
-                        <div className="sale-date">{new Date(sale.sale_date).toLocaleDateString()}</div>
-                        <div className="sale-amount">{formatCurrency(sale.sale_amount)}</div>
-                      </div>
-                      <div className="sale-product">
-                        <span>{sale.product_name}</span>
-                        <span className="sale-quantity">× {sale.quantity_sold}</span>
-                      </div>
-                      <div className="sale-customer">
-                        Customer: {sale.customer_first_name} {sale.customer_last_name}
-                      </div>
-                    </div>
-                  ))}
-                {salesData.filter(sale => sale.sales_rep_id === selectedRep.sales_rep_id).length === 0 && (
-                  <div className="no-sales">No sales data available for this representative</div>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+            </>
+          )}
+        </div>
 
         {/* Add Rep Modal */}
         {isAddingRep && (

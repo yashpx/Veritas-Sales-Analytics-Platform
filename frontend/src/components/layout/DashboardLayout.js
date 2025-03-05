@@ -49,7 +49,6 @@ const DashboardLayout = ({ children }) => {
   const utilityItems = [
     { text: 'Notifications', icon: <NotificationsIcon />, path: '/dashboard/notifications' },
     { text: 'Settings', icon: <SettingsIcon />, path: '/dashboard/settings' },
-    { text: 'Profile', icon: <PersonIcon />, path: '/dashboard/profile' },
   ];
 
   const listItemStyles = (isActive = false) => ({
@@ -238,6 +237,8 @@ const DashboardLayout = ({ children }) => {
 
           {/* User Profile */}
           <Box
+            component={Link}
+            to="/dashboard/profile"
             sx={{
               display: 'flex',
               alignItems: 'center',
@@ -246,6 +247,13 @@ const DashboardLayout = ({ children }) => {
               borderTop: '1px solid #f0f0f0',
               mt: 2,
               justifyContent: expanded ? 'flex-start' : 'center',
+              textDecoration: 'none',
+              color: 'inherit',
+              cursor: 'pointer',
+              transition: 'background-color 0.2s ease',
+              '&:hover': {
+                backgroundColor: '#f5f5f5',
+              },
             }}
           >
             <Avatar
@@ -287,13 +295,16 @@ const DashboardLayout = ({ children }) => {
                 </Box>
                 <Box
                   sx={{
-                    color: '#757575',
+                    display: 'flex',
+                    alignItems: 'center',
+                    color: '#5b8af5',
                     fontWeight: 500,
                     fontSize: '0.75rem',
                     fontFamily: '"Inter", "Roboto", "Helvetica", sans-serif',
                   }}
                 >
-                  {user.user_metadata?.role || "User"}
+                  <PersonIcon sx={{ fontSize: '0.875rem', mr: 0.5 }} />
+                  View Profile
                 </Box>
               </Box>
             )}
