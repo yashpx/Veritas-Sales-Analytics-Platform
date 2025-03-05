@@ -123,6 +123,10 @@ const CallTranscription = () => {
         if (existingTranscript && Array.isArray(existingTranscript) && existingTranscript.length > 0) {
           setDiarizedTranscription(existingTranscript);
           setExistingTranscription(true);
+          
+          // Set transcription flag in localStorage
+          localStorage.setItem(`transcription_flag_${callId}`, 'true');
+          
           setSuccess("Existing transcription loaded successfully");
           setShowSnackbar(true);
           // Don't show upload panels if we have a valid transcription
@@ -397,6 +401,9 @@ const CallTranscription = () => {
       // Step 3: Save the transcription to all storage locations
       setProcessingStep('Saving transcription...');
       await saveTranscription(callId, diarizedResult);
+      
+      // Set transcription flag in localStorage
+      localStorage.setItem(`transcription_flag_${callId}`, 'true');
       
       // Log success info
       console.log('Transcription process completed successfully:', {

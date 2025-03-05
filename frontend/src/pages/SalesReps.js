@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate } from 'react-router-dom';
-import { createClient } from '@supabase/supabase-js';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -17,12 +16,8 @@ import {
   Edit,
   Trash2
 } from 'lucide-react';
+import supabase from '../utils/supabaseClient';
 import '../styles/salesreps.css';
-
-// Supabase configuration
-const supabaseUrl = 'https://coghrwmmyyzmbnndlawi.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvZ2hyd21teXl6bWJubmRsYXdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4OTcyMjUsImV4cCI6MjA1NjQ3MzIyNX0.WLm0l2UeFPiPNxyClnM4bQpxw4TcYFxleTdc7K0G6AM';
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 const SalesReps = () => {
   const { user } = useAuth();
