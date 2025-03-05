@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { Phone, Mail, ChevronLeft, Edit, Search, Plus, X, User, Briefcase, FileText, Trash2 } from 'lucide-react';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
@@ -11,6 +11,7 @@ import '../styles/calls.css';
 
 const Customers = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [contacts, setContacts] = useState([]);
   const [selectedContact, setSelectedContact] = useState(null);
   const [filter, setFilter] = useState('All');
@@ -114,6 +115,13 @@ const Customers = () => {
 
   const handleAddContactClick = () => {
     setShowAddModal(true);
+  };
+  
+  const handleCallClick = (e, phoneNumber) => {
+    e.stopPropagation();
+    // Remove the + from the phone number if it exists
+    const formattedNumber = phoneNumber.startsWith('+') ? phoneNumber.substring(1) : phoneNumber;
+    navigate('/dashboard/dialpad', { state: { phoneNumber: formattedNumber } });
   };
 
   const handleCloseModal = () => {
@@ -359,7 +367,7 @@ const Customers = () => {
                         <div className="table-cell">{contact.company}</div>
                         <div className="table-cell">{contact.title}</div>
                         <div className="table-cell call-cell">
-                          <button className="call-button" onClick={(e) => e.stopPropagation()}>
+                          <button className="call-button" onClick={(e) => handleCallClick(e, contact.phone)}>
                             <Phone size={18} />
                           </button>
                           <button className="email-button" onClick={(e) => e.stopPropagation()}>
@@ -458,7 +466,7 @@ const Customers = () => {
                         <div className="table-cell">{contact.company}</div>
                         <div className="table-cell">{contact.title}</div>
                         <div className="table-cell call-cell">
-                          <button className="call-button" onClick={(e) => e.stopPropagation()}>
+                          <button className="call-button" onClick={(e) => handleCallClick(e, contact.phone)}>
                             <Phone size={18} />
                           </button>
                           <button className="email-button" onClick={(e) => e.stopPropagation()}>
@@ -509,7 +517,10 @@ const Customers = () => {
               </div>
 
               <div className="contact-actions">
-                <button className="action-button phone-action">
+                <button 
+                  className="action-button phone-action" 
+                  onClick={(e) => handleCallClick(e, selectedContact.phone)}
+                >
                   <Phone size={20} />
                 </button>
                 <button className="action-button email-action">

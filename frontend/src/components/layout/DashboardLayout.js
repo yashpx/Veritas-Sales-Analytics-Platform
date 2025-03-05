@@ -6,6 +6,7 @@ import AnalyticsIcon from '@mui/icons-material/BarChart';
 import PeopleIcon from '@mui/icons-material/People';
 import PersonIcon from '@mui/icons-material/Person';
 import PhoneIcon from '@mui/icons-material/Phone';
+import DialpadIcon from '@mui/icons-material/Dialpad';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
@@ -44,6 +45,7 @@ const DashboardLayout = ({ children }) => {
     { text: 'Contacts', icon: <PeopleIcon />, path: '/dashboard/customers' },
     { text: 'Sales Reps', icon: <PeopleIcon />, path: '/dashboard/sales-reps' },
     { text: 'Call Logs', icon: <PhoneIcon />, path: '/dashboard/calls' },
+    { text: 'Dial Pad', icon: <DialpadIcon />, path: '/dashboard/dialpad' },
   ];
 
   const utilityItems = [
