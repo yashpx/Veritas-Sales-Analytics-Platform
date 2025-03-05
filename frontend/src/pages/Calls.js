@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { Navigate, Link } from 'react-router-dom';
-import { createClient } from '@supabase/supabase-js';
 import { 
   Box, Paper, Typography, Table, TableBody, TableCell, 
   TableContainer, TableHead, TableRow, 
@@ -8,14 +7,12 @@ import {
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import MicIcon from '@mui/icons-material/Mic';
+import MicOffIcon from '@mui/icons-material/MicOff';
+import HeadphonesIcon from '@mui/icons-material/Headphones';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
+import supabase from '../utils/supabaseClient';
 import '../styles/dashboard.css';
-
-// Supabase connection
-const supabaseUrl = 'https://coghrwmmyyzmbnndlawi.supabase.co';
-const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNvZ2hyd21teXl6bWJubmRsYXdpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDA4OTcyMjUsImV4cCI6MjA1NjQ3MzIyNX0.WLm0l2UeFPiPNxyClnM4bQpxw4TcYFxleTdc7K0G6AM';
-const supabase = createClient(supabaseUrl, supabaseKey);
 
 const Calls = () => {
   const { user } = useAuth();
@@ -66,8 +63,32 @@ const Calls = () => {
           salesRepId: call.sales_reps?.sales_rep_id,
           duration: call.duration_minutes,
           outcome: call.call_outcome || 'Unknown',
-          notes: call.notes
+          notes: call.notes,
+          hasTranscription: false // Initialize as false, we'll check localStorage next
         }));
+        
+        // Check localStorage for any transcription flags
+        formattedCalls.forEach(call => {
+          // Check if we have a transcription flag in localStorage
+          const transcriptionFlag = localStorage.getItem(`transcription_flag_${call.id}`);
+          if (transcriptionFlag === 'true') {
+            call.hasTranscription = true;
+          }
+          
+          // Also check if transcription metadata exists in localStorage
+          const transcriptionMetadata = localStorage.getItem(`call_${call.id}_transcription_metadata`);
+          if (transcriptionMetadata) {
+            try {
+              const metadata = JSON.parse(transcriptionMetadata);
+              if (metadata.has_transcription) {
+                call.hasTranscription = true;
+              }
+            } catch (e) {
+              // Skip if metadata is invalid JSON
+              console.error(`Error parsing transcription metadata for call ${call.id}:`, e);
+            }
+          }
+        });
         
         setCalls(formattedCalls);
         setFilteredCalls(formattedCalls);
@@ -193,16 +214,26 @@ const Calls = () => {
                         <IconButton 
                           size="small" 
                           aria-label="transcribe" 
-                          title="View/Create Transcription"
+                          title={call.hasTranscription ? "View Transcription" : "Create New Transcription"}
                           component={Link}
                           to="/dashboard/call-transcription"
                           state={{ callData: call }}
                           sx={{ 
-                            color: '#4A90E2',
-                            '&:hover': { color: '#2A7DE1' } 
+                            color: call.hasTranscription ? '#4CAF50' : '#9E9E9E',
+                            bgcolor: call.hasTranscription ? 'rgba(76, 175, 80, 0.1)' : 'transparent',
+                            '&:hover': { 
+                              color: call.hasTranscription ? '#2E7D32' : '#4A90E2',
+                              bgcolor: call.hasTranscription ? 'rgba(76, 175, 80, 0.2)' : 'rgba(74, 144, 226, 0.1)'
+                            },
+                            borderRadius: '50%',
+                            padding: 1
                           }}
                         >
-                          <MicIcon fontSize="small" />
+                          {call.hasTranscription ? (
+                            <HeadphonesIcon fontSize="small" />
+                          ) : (
+                            <MicOffIcon fontSize="small" />
+                          )}
                         </IconButton>
                       </Box>
                     </TableCell>
