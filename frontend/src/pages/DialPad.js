@@ -289,6 +289,9 @@ const DialPad = () => {
                 <input
                   type="text"
                   className="phone-input"
+                  style={{ 
+                    width: phoneNumber && callStatus === 'idle' ? 'calc(100% - 40px)' : '100%' 
+                  }}
                   value={phoneNumber}
                   onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9*#]/g, ''))}
                   placeholder="Enter phone number"
