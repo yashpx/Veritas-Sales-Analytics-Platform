@@ -15,6 +15,7 @@ const Customers = React.lazy(() => import('./pages/Customers'));
 const SalesReps = React.lazy(() => import('./pages/SalesReps'));
 const Calls = React.lazy(() => import('./pages/Calls'));
 const CallTranscription = React.lazy(() => import('./pages/CallTranscription'));
+const DialPad = React.lazy(() => import('./pages/DialPad'));
 const Notifications = React.lazy(() => import('./pages/Notifications'));
 const Settings = React.lazy(() => import('./pages/Settings'));
 const Profile = React.lazy(() => import('./pages/Profile'));
@@ -80,6 +81,14 @@ function App() {
               element={
                 <React.Suspense fallback={<LoadingFallback />}>
                   <CallTranscription />
+                </React.Suspense>
+              } 
+            />
+            <Route 
+              path="/dashboard/dialpad" 
+              element={
+                <React.Suspense fallback={<LoadingFallback />}>
+                  <DialPad />
                 </React.Suspense>
               } 
             />
