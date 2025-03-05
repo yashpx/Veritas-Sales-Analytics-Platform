@@ -17,6 +17,7 @@ import PauseIcon from '@mui/icons-material/Pause';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
+import DownloadIcon from '@mui/icons-material/Download';
 import CircularProgress from '@mui/material/CircularProgress';
 import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -535,6 +536,40 @@ const CallTranscription = () => {
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
   
+  // Handle download transcript
+  const handleDownloadTranscript = () => {
+    if (!diarizedTranscription) {
+      setError("No transcription available to download");
+      setShowSnackbar(true);
+      return;
+    }
+    
+    try {
+      // Create a JSON string of the transcription data
+      const transcriptData = JSON.stringify(diarizedTranscription, null, 2);
+      
+      // Create a blob and download link
+      const blob = new Blob([transcriptData], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      
+      // Set download attributes and trigger click
+      link.href = url;
+      link.download = `transcript_${callId}_${callData?.client || 'call'}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+      
+      setSuccess("Transcript downloaded successfully");
+      setShowSnackbar(true);
+    } catch (error) {
+      console.error('Error downloading transcript:', error);
+      setError("Failed to download transcript");
+      setShowSnackbar(true);
+    }
+  };
+  
   return (
     <DashboardLayout>
       <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: '100%', overflow: 'hidden' }}>
@@ -1033,21 +1068,47 @@ const CallTranscription = () => {
                     </Typography>
                     
                     {existingTranscription && (
-                      <Tooltip title="Transcription saved to project storage">
-                        <Chip 
-                          icon={<CheckCircleIcon />}
-                          label="Saved" 
-                          color="success"
-                          size="small"
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Button
+                          variant="contained"
+                          startIcon={<DownloadIcon />}
+                          onClick={handleDownloadTranscript}
                           sx={{
+                            bgcolor: 'var(--primary-color)',
                             fontWeight: 500,
-                            px: 1,
-                            '& .MuiChip-icon': {
-                              fontSize: '1rem'
-                            }
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                            '&:hover': { 
+                              bgcolor: 'var(--primary-hover)', 
+                              boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                            },
+                            textTransform: 'none',
+                            borderRadius: '6px',
+                            padding: '6px 12px',
+                            fontSize: '0.85rem',
+                            width: 'auto',
+                            display: 'inline-flex',
+                            flexShrink: 0
                           }}
-                        />
-                      </Tooltip>
+                        >
+                          Download
+                        </Button>
+                        
+                        <Tooltip title="Transcription saved to project storage">
+                          <Chip 
+                            icon={<CheckCircleIcon />}
+                            label="Saved" 
+                            color="success"
+                            size="small"
+                            sx={{
+                              fontWeight: 500,
+                              px: 1,
+                              '& .MuiChip-icon': {
+                                fontSize: '1rem'
+                              }
+                            }}
+                          />
+                        </Tooltip>
+                      </Box>
                     )}
                   </Box>
                   
