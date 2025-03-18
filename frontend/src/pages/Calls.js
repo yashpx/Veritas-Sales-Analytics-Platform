@@ -23,57 +23,96 @@ const Calls = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Fetch calls from Supabase using the callsService
+    // Try direct Supabase query as a fallback if the service approach fails
     const loadCallLogs = async () => {
       try {
         setLoading(true);
         setError(null);
+
+        console.log('Attempting to fetch call logs via callsService...');
         
-        // Use the callsService to fetch call logs
-        const data = await fetchCallLogs();
+        try {
+          // First try using the service
+          const data = await fetchCallLogs();
+          
+          console.log('Call logs fetched via service:', data);
+          
+          if (data && data.length > 0) {
+            // Format the data
+            const formattedCalls = data.map(call => ({
+              ...call,
+              // Make sure hasTranscription is set correctly, checking localStorage as backup
+              hasTranscription: 
+                call.hasTranscription || 
+                localStorage.getItem(`transcription_flag_${call.id}`) === 'true' ||
+                false
+            }));
+            
+            setCalls(formattedCalls);
+            setFilteredCalls(formattedCalls);
+            setLoading(false);
+            return;
+          }
+        } catch (serviceError) {
+          console.error('Error with callsService, trying direct query:', serviceError);
+        }
         
-        // The fetchCallLogs service already includes the hasTranscription property
-        // But for backward compatibility, still check localStorage
-        const formattedCalls = data.map(call => {
-          // If call already has hasTranscription from database, use that
-          const hasTransFromDb = call.hasTranscription || false;
-          
-          // For backward compatibility, still check localStorage
-          let hasTransFromLocal = false;
-          
-          // Check if we have a transcription flag in localStorage
-          const transcriptionFlag = localStorage.getItem(`transcription_flag_${call.id}`);
-          if (transcriptionFlag === 'true') {
-            hasTransFromLocal = true;
-          }
-          
-          // Also check if transcription metadata exists in localStorage
-          const transcriptionMetadata = localStorage.getItem(`call_${call.id}_transcription_metadata`);
-          if (transcriptionMetadata) {
-            try {
-              const metadata = JSON.parse(transcriptionMetadata);
-              if (metadata.has_transcription) {
-                hasTransFromLocal = true;
-              }
-            } catch (e) {
-              // Skip if metadata is invalid JSON
-              console.error(`Error parsing transcription metadata for call ${call.id}:`, e);
-            }
-          }
-          
-          // Use either database or localStorage flag, whichever indicates the presence of a transcription
-          return {
-            ...call,
-            hasTranscription: hasTransFromDb || hasTransFromLocal
-          };
-        });
+        // If we reach here, the service failed or returned no data
+        // Try direct query to Supabase as fallback
+        console.log('Falling back to direct Supabase query...');
+        
+        // Use temporary direct import of supabase client
+        const supabase = (await import('../utils/supabaseClient')).default;
+        
+        // Using the same table joins as in your SQL query
+        let { data: call_logs, error } = await supabase
+          .from('call_logs')
+          .select(`
+            call_id,
+            call_date,
+            duration_minutes,
+            call_outcome,
+            notes,
+            transcription,
+            customers!inner(customer_id, customer_first_name, customer_last_name),
+            sales_reps!inner(sales_rep_id, sales_rep_first_name, sales_rep_last_name)
+          `);
+        
+        if (error) {
+          throw new Error(`Supabase query error: ${error.message}`);
+        }
+        
+        if (!call_logs || call_logs.length === 0) {
+          console.warn('No call logs found in database');
+          setCalls([]);
+          setFilteredCalls([]);
+          setLoading(false);
+          setError('No call logs available in the database.');
+          return;
+        }
+        
+        console.log('Raw call logs data from direct query:', call_logs);
+        
+        // Format the data using the joined customer and sales rep data
+        const formattedCalls = call_logs.map(call => ({
+          id: call.call_id,
+          date: call.call_date,
+          salesRep: `${call.sales_reps?.sales_rep_first_name || ''} ${call.sales_reps?.sales_rep_last_name || ''}`.trim() || 'Unknown',
+          client: `${call.customers?.customer_first_name || ''} ${call.customers?.customer_last_name || ''}`.trim() || 'Unknown',
+          duration: call.duration_minutes,
+          outcome: call.call_outcome || 'Unknown',
+          notes: call.notes,
+          hasTranscription: !!call.transcription,
+          salesRepId: call.sales_reps?.sales_rep_id,
+          customerId: call.customers?.customer_id
+        }));
         
         setCalls(formattedCalls);
         setFilteredCalls(formattedCalls);
         setLoading(false);
       } catch (err) {
-        console.error('Error fetching calls:', err);
-        setError('Failed to load call records. Please try again later.');
+        console.error('All attempts to fetch call logs failed:', err);
+        setError(`Failed to load call records: ${err.message}`);
         setLoading(false);
       }
     };

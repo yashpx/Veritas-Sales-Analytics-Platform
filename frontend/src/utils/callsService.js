@@ -6,7 +6,10 @@ import supabase from './supabaseClient';
  */
 export const fetchCallLogs = async () => {
   try {
-    const { data, error } = await supabase
+    console.log('Fetching call logs...');
+    
+    // Using the table relationships as specified in your SQL query
+    let { data: call_logs, error } = await supabase
       .from('call_logs')
       .select(`
         call_id,
@@ -14,27 +17,36 @@ export const fetchCallLogs = async () => {
         duration_minutes,
         call_outcome,
         notes,
-        has_transcription,
-        transcription_date,
-        sales_rep_id (id, name),
-        customer_id (id, name, company)
-      `)
-      .order('call_date', { ascending: false });
+        transcription,
+        customers!inner(customer_id, customer_first_name, customer_last_name),
+        sales_reps!inner(sales_rep_id, sales_rep_first_name, sales_rep_last_name)
+      `);
+    
+    console.log('Call logs query result:', { 
+      success: !error, 
+      error: error ? error.message : null,
+      dataCount: call_logs ? call_logs.length : 0 
+    });
     
     if (error) throw error;
     
-    return data.map(call => ({
+    if (!call_logs || call_logs.length === 0) {
+      console.warn('No call logs found in the database');
+      return [];
+    }
+    
+    return call_logs.map(call => ({
       id: call.call_id,
       date: call.call_date,
-      salesRep: call.sales_rep_id ? call.sales_rep_id.name : 'Unknown',
-      client: call.customer_id ? call.customer_id.company : 'Unknown',
+      salesRep: `${call.sales_reps?.sales_rep_first_name || ''} ${call.sales_reps?.sales_rep_last_name || ''}`.trim() || 'Unknown',
+      client: `${call.customers?.customer_first_name || ''} ${call.customers?.customer_last_name || ''}`.trim() || 'Unknown',
       duration: call.duration_minutes,
-      outcome: call.call_outcome,
+      outcome: call.call_outcome || 'Unknown',
       notes: call.notes,
-      hasTranscription: call.has_transcription || false,
-      transcriptionDate: call.transcription_date,
-      salesRepId: call.sales_rep_id ? call.sales_rep_id.id : null,
-      customerId: call.customer_id ? call.customer_id.id : null
+      hasTranscription: !!call.transcription,
+      transcription: call.transcription,
+      salesRepId: call.sales_reps?.sales_rep_id,
+      customerId: call.customers?.customer_id
     }));
   } catch (error) {
     console.error('Error fetching call logs:', error);
@@ -49,7 +61,8 @@ export const fetchCallLogs = async () => {
  */
 export const fetchCallById = async (callId) => {
   try {
-    const { data, error } = await supabase
+    // Using the table relationships as specified in your SQL query
+    let { data: call, error } = await supabase
       .from('call_logs')
       .select(`
         call_id,
@@ -57,10 +70,9 @@ export const fetchCallById = async (callId) => {
         duration_minutes,
         call_outcome,
         notes,
-        has_transcription,
-        transcription_date,
-        sales_rep_id (id, name),
-        customer_id (id, name, company)
+        transcription,
+        customers!inner(customer_id, customer_first_name, customer_last_name),
+        sales_reps!inner(sales_rep_id, sales_rep_first_name, sales_rep_last_name)
       `)
       .eq('call_id', callId)
       .single();
@@ -68,17 +80,17 @@ export const fetchCallById = async (callId) => {
     if (error) throw error;
     
     return {
-      id: data.call_id,
-      date: data.call_date,
-      salesRep: data.sales_rep_id ? data.sales_rep_id.name : 'Unknown',
-      client: data.customer_id ? data.customer_id.company : 'Unknown',
-      duration: data.duration_minutes,
-      outcome: data.call_outcome,
-      notes: data.notes,
-      hasTranscription: data.has_transcription || false,
-      transcriptionDate: data.transcription_date,
-      salesRepId: data.sales_rep_id ? data.sales_rep_id.id : null,
-      customerId: data.customer_id ? data.customer_id.id : null
+      id: call.call_id,
+      date: call.call_date,
+      salesRep: `${call.sales_reps?.sales_rep_first_name || ''} ${call.sales_reps?.sales_rep_last_name || ''}`.trim() || 'Unknown',
+      client: `${call.customers?.customer_first_name || ''} ${call.customers?.customer_last_name || ''}`.trim() || 'Unknown',
+      duration: call.duration_minutes,
+      outcome: call.call_outcome || 'Unknown',
+      notes: call.notes,
+      hasTranscription: !!call.transcription,
+      transcription: call.transcription,
+      salesRepId: call.sales_reps?.sales_rep_id,
+      customerId: call.customers?.customer_id
     };
   } catch (error) {
     console.error(`Error fetching call ID ${callId}:`, error);
@@ -167,17 +179,18 @@ export const saveTranscription = async (callId, transcription) => {
           `${segment.speaker}: ${segment.text}`
         ).join('\n\n');
         
+        console.log(`Saving transcription to call_logs table for call ${callId}`);
+        
         // Update the call_logs table with the transcription text
-        const { data, error } = await supabase
+        let { data: updateResult, error } = await supabase
           .from('call_logs')
           .update({ 
-            transcription: plainTextTranscription,
-            has_transcription: true,
-            transcription_date: new Date(timestamp).toISOString()
+            transcription: plainTextTranscription
           })
           .eq('call_id', callId);
         
         if (error) {
+          console.error('Error updating transcription in database:', error);
           throw error;
         }
         
@@ -263,24 +276,25 @@ export const fetchTranscription = async (callId) => {
     try {
       console.log(`Checking Supabase for transcription for call ${callId}`);
       
-      const { data, error } = await supabase
+      let { data: call, error } = await supabase
         .from('call_logs')
-        .select('transcription, has_transcription')
+        .select('transcription')
         .eq('call_id', callId)
         .single();
       
       if (error) {
+        console.error('Error fetching transcription from Supabase:', error);
         throw error;
       }
       
-      if (data && data.has_transcription && data.transcription) {
+      if (call && call.transcription) {
         console.log('Transcription found in Supabase database');
         
         // The transcription in the database is stored as plain text with speaker labels
         // We need to convert it back to the diarized format expected by the UI
         // This is a simple version - in a production app, you might store the full JSON
         
-        const lines = data.transcription.split('\n\n');
+        const lines = call.transcription.split('\n\n');
         const diarizedFormat = lines.map((line, index) => {
           // Try to extract speaker and text
           const match = line.match(/^(Speaker \d+):\s(.+)$/s);

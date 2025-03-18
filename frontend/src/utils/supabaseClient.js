@@ -8,8 +8,41 @@ if (!supabaseUrl || !supabaseAnonKey) {
   console.error('Missing Supabase environment variables. Check your .env file.');
 }
 
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
+// Additional logging to debug connection issues
+console.log('Creating Supabase client with:', {
+  url: supabaseUrl,
+  keyLength: supabaseAnonKey ? supabaseAnonKey.length : 0 // Don't log the full key for security
+});
 
-console.log('Supabase client initialized with URL:', supabaseUrl);
+let supabase;
+
+try {
+  supabase = createClient(supabaseUrl, supabaseAnonKey, {
+    auth: {
+      persistSession: true,
+      autoRefreshToken: true,
+    }
+  });
+  
+  // Test the connection with a simple query
+  const testConnection = async () => {
+    try {
+      const { data, error } = await supabase.from('call_logs').select('call_id').limit(1);
+      console.log('Supabase test connection result:', { success: !error, error, hasData: !!data });
+    } catch (e) {
+      console.error('Supabase test connection failed:', e);
+    }
+  };
+  
+  // Run the test but don't wait for it
+  testConnection();
+  
+  console.log('Supabase client initialized successfully');
+} catch (err) {
+  console.error('Error initializing Supabase client:', err);
+  // Provide a fallback client to prevent app from crashing
+  supabase = createClient(supabaseUrl, supabaseAnonKey);
+  console.warn('Using fallback Supabase client');
+}
 
 export default supabase;
