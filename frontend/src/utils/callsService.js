@@ -14,6 +14,8 @@ export const fetchCallLogs = async () => {
         duration_minutes,
         call_outcome,
         notes,
+        has_transcription,
+        transcription_date,
         sales_rep_id (id, name),
         customer_id (id, name, company)
       `)
@@ -29,6 +31,8 @@ export const fetchCallLogs = async () => {
       duration: call.duration_minutes,
       outcome: call.call_outcome,
       notes: call.notes,
+      hasTranscription: call.has_transcription || false,
+      transcriptionDate: call.transcription_date,
       salesRepId: call.sales_rep_id ? call.sales_rep_id.id : null,
       customerId: call.customer_id ? call.customer_id.id : null
     }));
@@ -53,6 +57,8 @@ export const fetchCallById = async (callId) => {
         duration_minutes,
         call_outcome,
         notes,
+        has_transcription,
+        transcription_date,
         sales_rep_id (id, name),
         customer_id (id, name, company)
       `)
@@ -69,6 +75,8 @@ export const fetchCallById = async (callId) => {
       duration: data.duration_minutes,
       outcome: data.call_outcome,
       notes: data.notes,
+      hasTranscription: data.has_transcription || false,
+      transcriptionDate: data.transcription_date,
       salesRepId: data.sales_rep_id ? data.sales_rep_id.id : null,
       customerId: data.customer_id ? data.customer_id.id : null
     };
@@ -83,7 +91,7 @@ export const fetchCallById = async (callId) => {
  * - Local download
  * - LocalStorage
  * - Public folder in project
- * - Database (simulated)
+ * - Supabase call_logs table
  * 
  * @param {number} callId - Call ID to associate with transcription
  * @param {object} transcription - Transcription data
@@ -151,20 +159,31 @@ export const saveTranscription = async (callId, transcription) => {
       
       console.log(`Transcription metadata saved for future reference: ${filename}`);
 
-      // 4. Save metadata to the simulated database
+      // 4. Save to Supabase call_logs table
       try {
-        // In a real app, you would call an API to update the call record in the database:
-        // await fetch('/api/calls/${callId}/transcription', {
-        //   method: 'POST',
-        //   headers: { 'Content-Type': 'application/json' },
-        //   body: JSON.stringify({ 
-        //     has_transcription: true,
-        //     transcription_path: `/transcriptions/${filename}`,
-        //     transcription_date: new Date(timestamp).toISOString()
-        //   })
-        // });
+        // Convert the diarized transcription to a plain text format for storage
+        // This combines all segments into a single text field
+        const plainTextTranscription = transcription.map(segment => 
+          `${segment.speaker}: ${segment.text}`
+        ).join('\n\n');
         
-        // For our demo, we'll store this info in localStorage
+        // Update the call_logs table with the transcription text
+        const { data, error } = await supabase
+          .from('call_logs')
+          .update({ 
+            transcription: plainTextTranscription,
+            has_transcription: true,
+            transcription_date: new Date(timestamp).toISOString()
+          })
+          .eq('call_id', callId);
+        
+        if (error) {
+          throw error;
+        }
+        
+        console.log(`Transcription saved to call_logs table for call ${callId}`);
+        
+        // For backward compatibility, still keep the local metadata
         localStorage.setItem(`call_${callId}_transcription_metadata`, JSON.stringify({
           has_transcription: true,
           transcription_path: `/transcriptions/${filename}`,
@@ -173,7 +192,7 @@ export const saveTranscription = async (callId, transcription) => {
         
         console.log(`Call metadata updated for call ${callId} to indicate transcription exists`);
       } catch (dbError) {
-        console.error('Error updating call metadata in database:', dbError);
+        console.error('Error updating transcription in Supabase:', dbError);
       }
       
       return { 
@@ -181,7 +200,7 @@ export const saveTranscription = async (callId, transcription) => {
         call_id: callId,
         filename,
         path: `/transcriptions/${filename}`,
-        message: 'Transcription saved locally and to project folder'
+        message: 'Transcription saved to database, locally, and to project folder'
       };
     } catch (saveError) {
       console.error('Error saving transcription to project folder:', saveError);
@@ -204,7 +223,7 @@ export const saveTranscription = async (callId, transcription) => {
  */
 export const fetchTranscription = async (callId) => {
   try {
-    // Try to get from localStorage first
+    // Try to get from localStorage first for faster access
     const localData = localStorage.getItem(`transcription_${callId}`);
     
     if (localData) {
@@ -234,26 +253,64 @@ export const fetchTranscription = async (callId) => {
         if (backupData) {
           return JSON.parse(backupData);
         }
-        
-        // If we have a record but no data in localStorage, try to reconstruct basic data
-        return [{
-          speaker: "Speaker 1",
-          text: "Transcription data was previously saved but needs to be reloaded.",
-          start_time: 0,
-          end_time: 1
-        }];
       } catch (fetchError) {
         console.error('Error fetching transcription from project storage:', fetchError);
         // Continue to other methods if project storage fetch fails
       }
     }
     
-    // Check Supabase for transcriptions (stub for now - would be implemented with real backend)
+    // Check Supabase for transcriptions
     try {
-      // This is where you'd check your backend/Supabase for stored transcriptions
-      console.log(`Checking for transcription in database for call ${callId}`);
+      console.log(`Checking Supabase for transcription for call ${callId}`);
       
-      // For now, we'll just check if there's a flag indicating it was transcribed
+      const { data, error } = await supabase
+        .from('call_logs')
+        .select('transcription, has_transcription')
+        .eq('call_id', callId)
+        .single();
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data && data.has_transcription && data.transcription) {
+        console.log('Transcription found in Supabase database');
+        
+        // The transcription in the database is stored as plain text with speaker labels
+        // We need to convert it back to the diarized format expected by the UI
+        // This is a simple version - in a production app, you might store the full JSON
+        
+        const lines = data.transcription.split('\n\n');
+        const diarizedFormat = lines.map((line, index) => {
+          // Try to extract speaker and text
+          const match = line.match(/^(Speaker \d+):\s(.+)$/s);
+          
+          if (match) {
+            return {
+              speaker: match[1],
+              text: match[2],
+              start_time: index * 5, // Approximate time for display purposes
+              end_time: (index + 1) * 5
+            };
+          } else {
+            // Fallback if format doesn't match expected pattern
+            return {
+              speaker: "Speaker 1",
+              text: line,
+              start_time: index * 5,
+              end_time: (index + 1) * 5
+            };
+          }
+        });
+        
+        // Save to localStorage for future faster access
+        localStorage.setItem(`transcription_${callId}`, JSON.stringify(diarizedFormat));
+        localStorage.setItem(`transcription_flag_${callId}`, 'true');
+        
+        return diarizedFormat;
+      }
+      
+      // If no transcription in database, check for flag in localStorage
       const transcriptionFlag = localStorage.getItem(`transcription_flag_${callId}`);
       if (transcriptionFlag === 'true') {
         console.log('Found transcription flag - this call has been transcribed before');

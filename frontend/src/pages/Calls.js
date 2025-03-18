@@ -11,7 +11,7 @@ import MicOffIcon from '@mui/icons-material/MicOff';
 import HeadphonesIcon from '@mui/icons-material/Headphones';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
-import supabase from '../utils/supabaseClient';
+import { fetchCallLogs } from '../utils/callsService';
 import '../styles/dashboard.css';
 
 const Calls = () => {
@@ -23,56 +23,28 @@ const Calls = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Fetch calls from Supabase
-    const fetchCallLogs = async () => {
+    // Fetch calls from Supabase using the callsService
+    const loadCallLogs = async () => {
       try {
         setLoading(true);
         setError(null);
         
-        // Get call logs data with joined customer and sales rep information
-        const { data, error } = await supabase
-          .from('call_logs')
-          .select(`
-            call_id,
-            call_date,
-            duration_minutes,
-            call_outcome,
-            notes,
-            customers (
-              customer_id,
-              customer_first_name,
-              customer_last_name
-            ),
-            sales_reps (
-              sales_rep_id,
-              sales_rep_first_name,
-              sales_rep_last_name
-            )
-          `)
-          .order('call_date', { ascending: false });
+        // Use the callsService to fetch call logs
+        const data = await fetchCallLogs();
         
-        if (error) throw error;
-        
-        // Transform data for display
-        const formattedCalls = data.map(call => ({
-          id: call.call_id,
-          date: call.call_date,
-          client: `${call.customers?.customer_first_name || 'Unknown'} ${call.customers?.customer_last_name || ''}`,
-          customerId: call.customers?.customer_id,
-          salesRep: `${call.sales_reps?.sales_rep_first_name || 'Unknown'} ${call.sales_reps?.sales_rep_last_name || ''}`,
-          salesRepId: call.sales_reps?.sales_rep_id,
-          duration: call.duration_minutes,
-          outcome: call.call_outcome || 'Unknown',
-          notes: call.notes,
-          hasTranscription: false // Initialize as false, we'll check localStorage next
-        }));
-        
-        // Check localStorage for any transcription flags
-        formattedCalls.forEach(call => {
+        // The fetchCallLogs service already includes the hasTranscription property
+        // But for backward compatibility, still check localStorage
+        const formattedCalls = data.map(call => {
+          // If call already has hasTranscription from database, use that
+          const hasTransFromDb = call.hasTranscription || false;
+          
+          // For backward compatibility, still check localStorage
+          let hasTransFromLocal = false;
+          
           // Check if we have a transcription flag in localStorage
           const transcriptionFlag = localStorage.getItem(`transcription_flag_${call.id}`);
           if (transcriptionFlag === 'true') {
-            call.hasTranscription = true;
+            hasTransFromLocal = true;
           }
           
           // Also check if transcription metadata exists in localStorage
@@ -81,13 +53,19 @@ const Calls = () => {
             try {
               const metadata = JSON.parse(transcriptionMetadata);
               if (metadata.has_transcription) {
-                call.hasTranscription = true;
+                hasTransFromLocal = true;
               }
             } catch (e) {
               // Skip if metadata is invalid JSON
               console.error(`Error parsing transcription metadata for call ${call.id}:`, e);
             }
           }
+          
+          // Use either database or localStorage flag, whichever indicates the presence of a transcription
+          return {
+            ...call,
+            hasTranscription: hasTransFromDb || hasTransFromLocal
+          };
         });
         
         setCalls(formattedCalls);
@@ -101,7 +79,7 @@ const Calls = () => {
     };
 
     if (user) {
-      fetchCallLogs();
+      loadCallLogs();
     }
   }, [user]);
 
