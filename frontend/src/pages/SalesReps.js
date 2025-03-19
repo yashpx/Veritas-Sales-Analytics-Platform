@@ -17,6 +17,7 @@ import {
   Trash2
 } from 'lucide-react';
 import supabase from '../utils/supabaseClient';
+import RegisterSalesRepForm from '../components/auth/RegisterSalesRepForm';
 import '../styles/salesreps.css';
 
 const SalesReps = () => {
@@ -28,12 +29,6 @@ const SalesReps = () => {
   const [selectedRep, setSelectedRep] = useState(null);
   const [showSidebar, setShowSidebar] = useState(false);
   const [isAddingRep, setIsAddingRep] = useState(false);
-  const [newRep, setNewRep] = useState({
-    sales_rep_first_name: '',
-    sales_rep_last_name: '',
-    'Phone Number': '',
-    'Email': ''
-  });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -132,59 +127,8 @@ const SalesReps = () => {
     }
   };
 
-  // Add a new sales rep
-  const addSalesRep = async () => {
-    try {
-      // Validate form
-      if (!newRep.sales_rep_first_name || !newRep.sales_rep_last_name || !newRep['Email']) {
-        alert('Please fill in all required fields');
-        return;
-      }
-
-      // Validate email format
-      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-      if (!emailRegex.test(newRep['Email'])) {
-        alert('Please enter a valid email address');
-        return;
-      }
-
-      // Validate phone format if provided
-      if (newRep['Phone Number'] && !/^\d+$/.test(newRep['Phone Number'])) {
-        alert('Phone number should contain only digits');
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('sales_reps')
-        .insert([
-          {
-            sales_rep_first_name: newRep.sales_rep_first_name,
-            sales_rep_last_name: newRep.sales_rep_last_name,
-            'Phone Number': newRep['Phone Number'] ? parseInt(newRep['Phone Number']) : null,
-            'Email': newRep['Email']
-          }
-        ])
-        .select();
-
-      if (error) {
-        throw error;
-      }
-
-      // Reset form and refresh data
-      setNewRep({
-        sales_rep_first_name: '',
-        sales_rep_last_name: '',
-        'Phone Number': '',
-        'Email': ''
-      });
-      setIsAddingRep(false);
-      fetchSalesReps();
-      showSuccessMessage('Sales representative added successfully!');
-    } catch (error) {
-      console.error('Error adding sales rep:', error);
-      alert(`Failed to add sales representative: ${error.message}`);
-    }
-  };
+  // This section was replaced by the RegisterSalesRepForm component
+  // which creates both a sales_rep and user_auth entry
 
   // Delete a sales rep
   const deleteSalesRep = async (id) => {
@@ -545,55 +489,15 @@ const SalesReps = () => {
                 <h2>Add New Sales Representative</h2>
                 <button className="close-modal-btn" onClick={() => setIsAddingRep(false)}>×</button>
               </div>
-              <div className="form-group">
-                <label>First Name <span className="required">*</span></label>
-                <input
-                  type="text"
-                  value={newRep.sales_rep_first_name}
-                  onChange={(e) => setNewRep({...newRep, sales_rep_first_name: e.target.value})}
-                  placeholder="First Name"
-                  required
-                  className="form-input"
-                />
-              </div>
-              <div className="form-group">
-                <label>Last Name <span className="required">*</span></label>
-                <input
-                  type="text"
-                  value={newRep.sales_rep_last_name}
-                  onChange={(e) => setNewRep({...newRep, sales_rep_last_name: e.target.value})}
-                  placeholder="Last Name"
-                  required
-                  className="form-input"
-                />
-              </div>
-              <div className="form-group">
-                <label>Email <span className="required">*</span></label>
-                <input
-                  type="email"
-                  value={newRep['Email']}
-                  onChange={(e) => setNewRep({...newRep, 'Email': e.target.value})}
-                  placeholder="Email"
-                  required
-                  className="form-input"
-                />
-              </div>
-              <div className="form-group">
-                <label>Phone Number</label>
-                <input
-                  type="tel"
-                  value={newRep['Phone Number']}
-                  onChange={(e) => setNewRep({...newRep, 'Phone Number': e.target.value})}
-                  placeholder="Phone Number (numbers only)"
-                  className="form-input"
-                />
-              </div>
-              <div className="modal-actions">
-                <button className="cancel-btn" onClick={() => setIsAddingRep(false)}>Cancel</button>
-                <button className="save-btn" onClick={addSalesRep}>
-                  <span className="save-icon">💾</span> Save
-                </button>
-              </div>
+              
+              <RegisterSalesRepForm 
+                onSuccess={(data) => {
+                  setIsAddingRep(false);
+                  fetchSalesReps();
+                  showSuccessMessage('Sales representative added successfully!');
+                }}
+              />
+              
             </div>
           </div>
         )}

@@ -2,14 +2,16 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
-import supabase from '../../utils/supabaseClient';
+import { useAuth } from '../../context/AuthContext';
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [loginType, setLoginType] = useState('manager'); // 'manager' or 'sales_rep'
   const navigate = useNavigate();
+  const { signIn, signInSalesRep } = useAuth();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -23,12 +25,16 @@ const LoginForm = () => {
       setError('');
       setLoading(true);
       
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password
-      });
+      if (loginType === 'manager') {
+        // Manager login uses Supabase auth
+        const { error } = await signIn(email, password);
+        if (error) throw error;
+      } else {
+        // Sales rep login uses custom auth
+        const { error } = await signInSalesRep(email, password);
+        if (error) throw error;
+      }
       
-      if (error) throw error;
       navigate('/dashboard');
     } catch (error) {
       setError(error.message || 'Failed to sign in');
@@ -38,9 +44,49 @@ const LoginForm = () => {
     }
   };
 
+  const toggleLoginType = () => {
+    setLoginType(loginType === 'manager' ? 'sales_rep' : 'manager');
+    setError(''); // Clear any previous errors
+  };
+
   return (
     <form onSubmit={handleSubmit}>
       {error && <div className="error-message">{error}</div>}
+      
+      <div className="login-mode-toggle" style={{ marginBottom: '1rem' }}>
+        <div className="login-toggle-buttons" style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
+          <button 
+            type="button" 
+            className={`toggle-button ${loginType === 'manager' ? 'active' : ''}`}
+            onClick={() => setLoginType('manager')}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: loginType === 'manager' ? 'var(--primary-color)' : 'transparent',
+              color: loginType === 'manager' ? 'white' : 'var(--text-color)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Manager Login
+          </button>
+          <button 
+            type="button" 
+            className={`toggle-button ${loginType === 'sales_rep' ? 'active' : ''}`}
+            onClick={() => setLoginType('sales_rep')}
+            style={{
+              padding: '0.5rem 1rem',
+              backgroundColor: loginType === 'sales_rep' ? 'var(--primary-color)' : 'transparent',
+              color: loginType === 'sales_rep' ? 'white' : 'var(--text-color)',
+              border: '1px solid var(--border-color)',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Sales Rep Login
+          </button>
+        </div>
+      </div>
       
       <Input
         label="Email Address"
@@ -64,21 +110,23 @@ const LoginForm = () => {
         <input type="checkbox" id="remember-me" />
         <label htmlFor="remember-me">Remember me</label>
         
-        <Link 
-          to="/reset-password" 
-          style={{ 
-            marginLeft: 'auto', 
-            color: 'var(--primary-color)', 
-            fontSize: '0.875rem', 
-            textDecoration: 'none' 
-          }}
-        >
-          Forgot password?
-        </Link>
+        {loginType === 'manager' && (
+          <Link 
+            to="/reset-password" 
+            style={{ 
+              marginLeft: 'auto', 
+              color: 'var(--primary-color)', 
+              fontSize: '0.875rem', 
+              textDecoration: 'none' 
+            }}
+          >
+            Forgot password?
+          </Link>
+        )}
       </div>
       
       <Button type="submit" disabled={loading}>
-        {loading ? 'Signing in...' : 'Sign in'}
+        {loading ? 'Signing in...' : `Sign in as ${loginType === 'manager' ? 'Manager' : 'Sales Rep'}`}
       </Button>
     </form>
   );

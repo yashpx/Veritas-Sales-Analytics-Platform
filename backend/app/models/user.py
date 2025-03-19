@@ -33,3 +33,29 @@ class TokenResponse(BaseModel):
     """Schema for token response data"""
     access_token: str
     token_type: str = "bearer"
+
+class SalesRepCreate(BaseModel):
+    """Schema for sales rep creation"""
+    sales_rep_first_name: str
+    sales_rep_last_name: str
+    email: EmailStr
+    phone_number: Optional[int] = None
+    password: str = Field(..., min_length=6)
+
+class SalesRepLogin(BaseModel):
+    """Schema for sales rep login"""
+    email: EmailStr
+    password: str
+
+class SalesRepResponse(BaseModel):
+    """Schema for returning sales rep data"""
+    id: int
+    full_name: str
+    email: str
+    role: str
+
+class SalesRepTokenResponse(BaseModel):
+    """Schema for sales rep token response"""
+    access_token: str
+    token_type: str = "bearer"
+    user_data: SalesRepResponse

@@ -1,6 +1,7 @@
 import os
 from pathlib import Path
 from dotenv import load_dotenv
+import secrets
 
 # Load environment variables from .env file
 env_path = Path('.') / '.env'
@@ -30,3 +31,8 @@ ALLOWED_ORIGINS = [
 
 # Application settings
 PROJECT_NAME = "supabase-auth-demo"
+
+# JWT Settings for custom authentication
+JWT_SECRET = os.getenv("JWT_SECRET", secrets.token_hex(32))
+JWT_ALGORITHM = "HS256"
+JWT_EXPIRATION = 24 * 60 * 60  # 24 hours in seconds
