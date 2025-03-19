@@ -27,7 +27,7 @@ try {
   // Test the connection with a simple query
   const testConnection = async () => {
     try {
-      const { data, error } = await supabase.from('call_logs').select('call_id').limit(1);
+      const { data, error } = await supabase.from('organizations').select('organization_id').limit(1);
       console.log('Supabase test connection result:', { success: !error, error, hasData: !!data });
     } catch (e) {
       console.error('Supabase test connection failed:', e);
@@ -44,5 +44,99 @@ try {
   supabase = createClient(supabaseUrl, supabaseAnonKey);
   console.warn('Using fallback Supabase client');
 }
+
+// Helper functions for working with organizations
+export const organizationService = {
+  // Get the organization information
+  getOrganization: async (organizationId) => {
+    if (!organizationId) return null;
+    
+    try {
+      const { data, error } = await supabase
+        .from('organizations')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .single();
+        
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error fetching organization:', error);
+      return null;
+    }
+  },
+  
+  // Get all sales reps for an organization
+  getSalesReps: async (organizationId) => {
+    if (!organizationId) return [];
+    
+    try {
+      const { data, error } = await supabase
+        .from('sales_reps')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('sales_rep_last_name', { ascending: true });
+        
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching sales reps:', error);
+      return [];
+    }
+  },
+  
+  // Get all customers for an organization
+  getCustomers: async (organizationId) => {
+    if (!organizationId) return [];
+    
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .select('*')
+        .eq('organization_id', organizationId)
+        .order('customer_last_name', { ascending: true });
+        
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching customers:', error);
+      return [];
+    }
+  },
+  
+  // Create a new sales rep for an organization
+  createSalesRep: async (salesRepData) => {
+    try {
+      const { data, error } = await supabase
+        .from('sales_reps')
+        .insert([salesRepData])
+        .select()
+        .single();
+        
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating sales rep:', error);
+      throw error;
+    }
+  },
+  
+  // Create a new customer for an organization
+  createCustomer: async (customerData) => {
+    try {
+      const { data, error } = await supabase
+        .from('customers')
+        .insert([customerData])
+        .select()
+        .single();
+        
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating customer:', error);
+      throw error;
+    }
+  }
+};
 
 export default supabase;

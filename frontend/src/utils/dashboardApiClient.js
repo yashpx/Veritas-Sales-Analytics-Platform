@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import supabase from './supabaseClient';
 
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL;
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY;
@@ -10,8 +11,27 @@ if (!supabaseUrl || !supabaseAnonKey) {
 // Create a separate client for dashboard-related operations
 const dashboardClient = createClient(supabaseUrl, supabaseAnonKey);
 
+// Get the user's organization ID from userProfile
+const getOrganizationId = () => {
+  const userProfileStr = localStorage.getItem('userProfile');
+  if (!userProfileStr) return null;
+  
+  try {
+    const userProfile = JSON.parse(userProfileStr);
+    return userProfile.organization_id;
+  } catch (e) {
+    console.error('Error parsing user profile:', e);
+    return null;
+  }
+};
+
 // Dashboard data fetching functions
-export const fetchDashboardData = async () => {
+export const fetchDashboardData = async (organizationId = getOrganizationId()) => {
+  if (!organizationId) {
+    console.error('No organization ID available');
+    return defaultDashboardData();
+  }
+  
   try {
     // Get total calls (last 7 days)
     const year = new Date().getFullYear();
@@ -22,6 +42,7 @@ export const fetchDashboardData = async () => {
     const { data: callData, error: callError } = await dashboardClient
       .from('call_logs')
       .select('call_id')
+      .eq('organization_id', organizationId)
       .gte('call_date', startOfWeek.toISOString())
       .lt('call_date', endOfWeek.toISOString());
     
@@ -31,6 +52,7 @@ export const fetchDashboardData = async () => {
     const { data: closedSales, error: salesError } = await dashboardClient
       .from('call_logs')
       .select('call_id')
+      .eq('organization_id', organizationId)
       .eq('call_outcome', 'Closed');
     
     if (salesError) throw salesError;
@@ -39,6 +61,7 @@ export const fetchDashboardData = async () => {
     const { data: minutesData, error: minutesError } = await dashboardClient
       .from('call_logs')
       .select('duration_minutes')
+      .eq('organization_id', organizationId)
       .gte('call_date', startOfWeek.toISOString())
       .lt('call_date', endOfWeek.toISOString());
     
@@ -50,6 +73,7 @@ export const fetchDashboardData = async () => {
     const { data: pendingSales, error: pendingError } = await dashboardClient
       .from('call_logs')
       .select('call_id')
+      .eq('organization_id', organizationId)
       .eq('call_outcome', 'In-progress');
     
     if (pendingError) throw pendingError;
@@ -62,6 +86,7 @@ export const fetchDashboardData = async () => {
         sales_reps!inner(sales_rep_first_name, sales_rep_last_name),
         sale_amount
       `)
+      .eq('organization_id', organizationId)
       .order('sale_date', { ascending: false })
       .limit(50);
     
@@ -107,6 +132,7 @@ export const fetchDashboardData = async () => {
         customers!inner(customer_first_name, customer_last_name),
         sales_reps!inner(sales_rep_first_name, sales_rep_last_name)
       `)
+      .eq('organization_id', organizationId)
       .order('call_date', { ascending: false })
       .limit(5);
     
@@ -128,6 +154,7 @@ export const fetchDashboardData = async () => {
     const { data: monthlySalesData, error: monthlySalesError } = await dashboardClient
       .from('sales_data')
       .select('sale_amount')
+      .eq('organization_id', organizationId)
       .gte('sale_date', currentMonthStart)
       .lte('sale_date', currentMonthEnd);
     
@@ -161,14 +188,239 @@ export const fetchDashboardData = async () => {
     
   } catch (error) {
     console.error('Error fetching dashboard data:', error);
-    throw error;
+    return defaultDashboardData();
   }
 };
+
+// Function to get all call logs for the organization
+export async function getCallLogs(organizationId = getOrganizationId()) {
+  if (!organizationId) return [];
+  
+  try {
+    const { data, error } = await supabase
+      .from('call_logs')
+      .select('*')
+      .eq('organization_id', organizationId)
+      .order('call_start_time', { ascending: false });
+      
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching call logs:', error);
+    return [];
+  }
+}
+
+// Function to get all sales representatives for the organization
+export async function getSalesReps(organizationId = getOrganizationId()) {
+  if (!organizationId) return [];
+  
+  try {
+    const { data, error } = await supabase
+      .from('sales_reps')
+      .select('*')
+      .eq('organization_id', organizationId);
+      
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching sales reps:', error);
+    return [];
+  }
+}
+
+// Function to get all customers for the organization
+export async function getCustomers(organizationId = getOrganizationId()) {
+  if (!organizationId) return [];
+  
+  try {
+    const { data, error } = await supabase
+      .from('customers')
+      .select('*')
+      .eq('organization_id', organizationId);
+      
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching customers:', error);
+    return [];
+  }
+}
+
+// Function to get call transcription by call ID
+export async function getCallTranscription(callId, organizationId = getOrganizationId()) {
+  if (!organizationId) return null;
+  
+  try {
+    const { data, error } = await supabase
+      .from('call_transcription')
+      .select('*')
+      .eq('call_id', callId)
+      .eq('organization_id', organizationId)
+      .single();
+      
+    if (error) {
+      // If not found, return null without throwing
+      if (error.code === 'PGRST116') {
+        return null;
+      }
+      throw error;
+    }
+    
+    return data;
+  } catch (error) {
+    console.error(`Error fetching transcription for call ${callId}:`, error);
+    return null;
+  }
+}
+
+// Function to get sales data for dashboard
+export async function getSalesData(organizationId = getOrganizationId()) {
+  if (!organizationId) return [];
+  
+  try {
+    const { data, error } = await supabase
+      .from('sales_data')
+      .select(`
+        *,
+        sales_reps (sales_rep_first_name, sales_rep_last_name),
+        customers (customer_first_name, customer_last_name, "Company")
+      `)
+      .eq('organization_id', organizationId)
+      .order('sale_date', { ascending: false });
+      
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching sales data:', error);
+    return [];
+  }
+}
+
+// Function to get KPI targets for sales reps
+export async function getSalesKPITargets(organizationId = getOrganizationId()) {
+  if (!organizationId) return [];
+  
+  try {
+    const { data, error } = await supabase
+      .from('sales_kpi')
+      .select(`
+        *,
+        sales_reps (sales_rep_first_name, sales_rep_last_name)
+      `)
+      .eq('organization_id', organizationId)
+      .order('month', { ascending: false });
+      
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching KPI targets:', error);
+    return [];
+  }
+}
+
+// Function to create a new call log
+export async function createCallLog(callData, organizationId = getOrganizationId()) {
+  if (!organizationId) throw new Error('Organization ID is required');
+  
+  try {
+    const { data, error } = await supabase
+      .from('call_logs')
+      .insert([{
+        ...callData,
+        organization_id: organizationId
+      }])
+      .select()
+      .single();
+      
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error creating call log:', error);
+    throw error;
+  }
+}
+
+// Function to save call transcription
+export async function saveCallTranscription(callId, transcriptionData, organizationId = getOrganizationId()) {
+  if (!organizationId) throw new Error('Organization ID is required');
+  
+  try {
+    const { data, error } = await supabase
+      .from('call_transcription')
+      .insert([{
+        call_id: callId,
+        organization_id: organizationId,
+        call_transcription: transcriptionData
+      }])
+      .select()
+      .single();
+      
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error saving call transcription:', error);
+    throw error;
+  }
+}
+
+// Function to create a new product
+export async function createProduct(productData, organizationId = getOrganizationId()) {
+  if (!organizationId) throw new Error('Organization ID is required');
+  
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .insert([{
+        ...productData,
+        organization_id: organizationId
+      }])
+      .select()
+      .single();
+      
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Error creating product:', error);
+    throw error;
+  }
+}
+
+// Get all products for an organization
+export async function getProducts(organizationId = getOrganizationId()) {
+  if (!organizationId) return [];
+  
+  try {
+    const { data, error } = await supabase
+      .from('products')
+      .select('*')
+      .eq('organization_id', organizationId);
+      
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    return [];
+  }
+}
 
 // Helper function to get month name
 const getMonthName = (monthIndex) => {
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   return months[monthIndex];
 };
+
+// Default empty dashboard data when organization is not available
+const defaultDashboardData = () => ({
+  totalCalls: 0,
+  salesClosed: 0,
+  callMinutes: 0,
+  salesPending: 0,
+  topSalesReps: [],
+  recentCalls: [],
+  monthlySales: 0,
+  callSentiment: { positive: 0, negative: 0, neutral: 0 },
+  salesTrend: []
+});
 
 export default dashboardClient;
