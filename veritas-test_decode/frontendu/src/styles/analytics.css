@@ -1,0 +1,293 @@
+body {
+    background-color: #f5f7fb;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  }
+  
+  .MuiPaper-root {
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
+    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  }
+  
+  .MuiPaper-root:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08) !important;
+  }
+  
+  .MuiTableCell-head {
+    font-weight: 600 !important;
+    color: #6c757d !important;
+    font-size: 0.8rem !important;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  
+  .MuiTableCell-body {
+    font-size: 0.9rem !important;
+    padding: 16px !important;
+  }
+  
+  .MuiChip-root {
+    font-weight: 500;
+    font-size: 0.75rem;
+  }
+  
+  .recharts-default-tooltip {
+    background-color: rgba(255, 255, 255, 0.95) !important;
+    border: none !important;
+    border-radius: 8px !important;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+    padding: 10px 14px !important;
+  }
+  
+  .recharts-tooltip-label {
+    font-weight: 600 !important;
+    margin-bottom: 5px !important;
+  }
+  
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  
+  ::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+  }
+  
+  /* Responsive font sizes */
+  @media (max-width: 600px) {
+    .MuiTypography-h5 {
+      font-size: 1.25rem !important;
+    }
+    
+    .MuiTypography-h6 {
+      font-size: 1.1rem !important;
+    }
+  }
+  /* Dashboard Layout Styles */
+.dashboard-container {
+  min-height: 100vh;
+  background-color: #f5f7fa;
+}
+
+/* Typography */
+body {
+  font-family: 'Inter', 'Roboto', 'Helvetica Neue', sans-serif;
+}
+
+/* Card Hover Effects */
+.analytics-card {
+  transition: all 0.3s ease;
+}
+
+.analytics-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+}
+
+/* Custom Progress Bar Styles */
+.progress-container {
+  position: relative;
+  height: 10px;
+  background-color: #f0f0f0;
+  border-radius: 5px;
+  overflow: hidden;
+  margin: 8px 0;
+}
+
+.progress-bar {
+  position: absolute;
+  height: 100%;
+  border-radius: 5px;
+  transition: width 0.5s ease-in-out;
+}
+
+/* Avatar styles */
+.manager-avatar {
+  background: linear-gradient(45deg, #4e8af4, #1a73e8);
+  font-weight: bold;
+  box-shadow: 0 4px 8px rgba(26, 115, 232, 0.3);
+}
+
+/* Table Styles */
+.product-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.product-table th {
+  background-color: #f5f7fa;
+  color: #5f6368;
+  font-weight: 500;
+  text-align: left;
+  padding: 12px 16px;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+.product-table td {
+  padding: 12px 16px;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.product-table tr:hover {
+  background-color: #f5f7fa;
+}
+
+/* KPI Cards */
+.kpi-card {
+  background-color: white;
+  border-radius: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  padding: 24px;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.kpi-card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.12);
+}
+
+/* Dashboard Section Titles */
+.section-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+  position: relative;
+  display: inline-block;
+}
+
+.chart-container {
+  height: 300px;
+  margin-top: 1rem;
+}
+
+/* Responsive adjustments */
+@media (max-width: 960px) {
+  .chart-container {
+    height: 250px;
+  }
+}
+
+@media (max-width: 600px) {
+  .chart-container {
+    height: 200px;
+  }
+  
+  .kpi-card {
+    padding: 16px;
+  }
+}
+
+/* Animations for loading states */
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.8;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
+.loading-placeholder {
+  animation: pulse 1.5s infinite;
+  background-color: #f0f0f0;
+  border-radius: 4px;
+}
+
+/* Custom styles for recharts */
+.recharts-tooltip-wrapper {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12) !important;
+  border: none !important;
+  padding: 8px !important;
+}
+
+.recharts-default-tooltip {
+  background-color: rgba(255, 255, 255, 0.96) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.12) !important;
+}
+
+/* Form styles */
+.form-field {
+  margin-bottom: 16px;
+}
+
+/* Button styles */
+.primary-button {
+  background-color: #1a73e8;
+  color: white;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 500;
+  text-transform: none;
+  box-shadow: 0 2px 8px rgba(26, 115, 232, 0.3);
+  transition: background-color 0.2s ease;
+}
+
+.primary-button:hover {
+  background-color: #0d62c9;
+}
+
+.accent-button {
+  background-color: #E91E63;
+  color: white;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-weight: 500;
+  text-transform: none;
+  box-shadow: 0 2px 8px rgba(233, 30, 99, 0.3);
+  transition: background-color 0.2s ease;
+}
+
+.accent-button:hover {
+  background-color: #C2185B;
+}
+
+/* Empty state styles */
+.empty-state {
+  text-align: center;
+  padding: 32px;
+  color: #80868b;
+}
+
+/* Dialog styles */
+.dialog-title {
+  color: #1a73e8;
+  font-weight: 500;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}

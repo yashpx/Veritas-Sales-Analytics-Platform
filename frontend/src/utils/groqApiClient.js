@@ -56,39 +56,68 @@ export const diarizeTranscription = async (transcription) => {
       messages: [
         {
           role: 'system',
-          content: 'You are an expert in audio transcription processing and speaker diarization. Your task is to analyze transcripts from business calls and accurately identify different speakers. You have exceptional skill in recognizing speaker switches based on conversation patterns, contextual cues, and speech patterns.'
+          content: 'You are an expert in audio transcription processing, linguistics, and speaker diarization. Your specialty is analyzing business call audio transcripts, identifying different speakers with high accuracy, and breaking conversations into proper sentence-level segments based on natural speech patterns. You have exceptional skill in recognizing speaker switches based on conversation context, linguistic cues, and speech patterns.'
         },
         {
           role: 'user',
-          content: `I need your help with a highly accurate speaker diarization task for a business call transcript. This is a call between a sales representative and a client.
+          content: `I need your help with a highly accurate speaker diarization task for a business sales call transcript. This is a call between a sales representative (Agent) and a customer (Caller).
 
-IMPORTANT: The response must be a valid JSON with an array of segments where each segment is an object containing these exact fields: 
-- start_time (number): Precise timestamp in seconds when this segment starts
-- end_time (number): Precise timestamp in seconds when this segment ends
-- text (string): The exact text from the transcript 
-- speaker (string): Either "Speaker 1" (sales rep) or "Speaker 2" (client)
-- words (array, optional): If the original transcript has word-level timing, include an array of objects with {text, start_time, end_time}
+IMPORTANT FORMATTING REQUIREMENTS:
+1. The response must be a valid JSON array of segments
+2. Each segment should represent a SINGLE COMPLETE SENTENCE or natural speech unit
+3. Break the transcript at EVERY sentence boundary (periods, question marks, exclamation points)
+4. Each segment must contain these exact fields: 
+   - start_time (number): Precise timestamp in seconds when this segment starts
+   - end_time (number): Precise timestamp in seconds when this segment ends
+   - text (string): The exact text for this single sentence or speech unit
+   - speaker (string): Either "Agent" (sales rep) or "Caller" (customer)
+   - words (array, optional): If the original transcript has word-level timing, include an array of objects with {text, start_time, end_time}
 
-Pay careful attention to:
-1. Natural turn-taking patterns in conversation (questions followed by answers)
-2. Consistent speaker identification (don't switch who is Speaker 1 or 2 midway)
-3. Topic coherence (speakers typically complete their thoughts before switching)
-4. Preserving precise timing from the original transcript
-5. Breaking segments at natural speaker transitions, not in the middle of thoughts
+SPEAKER IDENTIFICATION GUIDELINES:
+1. Analyze the ENTIRE conversation first to identify speaker patterns
+2. The first speaker is typically the "Agent" (sales representative) who opens the call
+3. Look for these reliable indicators:
+   - Agent: Uses professional greetings, company identification, offers assistance
+   - Agent: Uses phrases like "How may I help you?", "Thank you for calling"
+   - Agent: References systems, procedures, product information 
+   - Caller: Explains their problem/need, asks questions about services
+   - Caller: Provides personal details or situation information
+   - Caller: Uses phrases like "I wanted to know", "I'm calling about my order"
+4. Maintain speaker consistency - the same person should be labeled the same throughout
+5. For any segments where the speaker is truly ambiguous, use context from surrounding segments
+
+SEGMENTATION REQUIREMENTS:
+1. Split the transcript at EVERY sentence boundary (periods, question marks, exclamation points)
+2. Create a new segment whenever the speaker changes
+3. For very long statements by the same speaker, break into logical segments of 1-2 sentences each
+4. Preserve the original timestamps (or distribute them proportionally if splitting a segment)
+5. Preserve all original words, phrases and meaning
 
 Format example:
 [
   {
     "start_time": 0.0,
+    "end_time": 2.4,
+    "text": "Hello, this is John from ABC Company.",
+    "speaker": "Agent"
+  },
+  {
+    "start_time": 2.4,
     "end_time": 5.2,
-    "text": "Hello, how are you today? I'm calling about your recent inquiry.",
-    "speaker": "Speaker 1"
+    "text": "How can I help you today?",
+    "speaker": "Agent"
   },
   {
     "start_time": 5.5,
+    "end_time": 8.3,
+    "text": "Hi, I'm calling about my recent order.",
+    "speaker": "Caller"
+  },
+  {
+    "start_time": 8.3,
     "end_time": 10.1,
-    "text": "I'm doing well, thank you for calling. Yes, I was interested in learning more about your services.",
-    "speaker": "Speaker 2"
+    "text": "I haven't received it yet and it's been two weeks.",
+    "speaker": "Caller"
   }
 ]
 
@@ -347,10 +376,194 @@ export const splitSegment = (diarizedTranscription, segmentIndex, wordIndex, sec
   return updatedTranscription;
 };
 
+/**
+ * Cleans and formats a transcript using Groq LLM
+ * @param {Object|string} transcription - Transcription in potentially messy format
+ * @returns {Promise<Array>} - Promise with cleaned and formatted transcription
+ */
+export const cleanTranscriptWithGroq = async (transcription) => {
+  try {
+    // Parse if string
+    let transcriptObj = transcription;
+    if (typeof transcription === 'string') {
+      try {
+        transcriptObj = JSON.parse(transcription);
+      } catch (e) {
+        // If can't parse, use as is
+        transcriptObj = { text: transcription };
+      }
+    }
+
+    // Send to Groq for cleaning and formatting
+    const response = await groqClient.post('/chat/completions', {
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert in conversation analysis, linguistics, and transcript formatting. Your specialty is analyzing business call transcripts, identifying different speakers with high accuracy, and breaking conversations into proper segments based on natural speech patterns.'
+        },
+        {
+          role: 'user',
+          content: `I need your help cleaning and formatting this sales call transcription data. The transcription may be in various formats, but I need it converted to a standard format with highly accurate speaker identification and proper sentence-level segmentation.
+
+IMPORTANT FORMATTING REQUIREMENTS:
+1. The response must be a valid JSON array of segments
+2. Each segment should represent a SINGLE COMPLETE SENTENCE or natural speech unit
+3. Break at every period/full stop to create new segments
+4. Each segment must have these properties:
+   - speaker: Should be either "Agent" (sales rep) or "Caller" (customer) based on context clues
+   - text: The exact text for this single sentence or speech unit
+   - start_time: A numeric value for when this segment starts (use sequential integers if not provided)
+   - end_time: A numeric value for when this segment ends (use start_time + 1 if not provided)
+
+Here's the transcription to clean and format: ${JSON.stringify(transcriptObj)}
+
+SPEAKER IDENTIFICATION GUIDELINES:
+1. Analyze the ENTIRE conversation first to identify speaker patterns
+2. The first speaker is typically the "Agent" (sales representative) who opens the call
+3. Look for these reliable indicators:
+   - Agent: Uses professional greetings, company identification, offers assistance
+   - Agent: Uses phrases like "How may I help you?", "Thank you for calling"
+   - Agent: References systems, procedures, product information 
+   - Caller: Explains their problem/need, asks questions about services
+   - Caller: Provides personal details or situation information
+   - Caller: Uses phrases like "I wanted to know", "I'm calling about my order"
+4. Maintain speaker consistency - the same person should be labeled the same throughout
+5. For any segments where the speaker is truly ambiguous, use context from previous and following segments
+
+SEGMENTATION REQUIREMENTS:
+1. Split the transcript at EVERY sentence boundary (periods, question marks, exclamation points)
+2. Create a new segment whenever the speaker changes
+3. For very long statements by the same speaker, break into logical segments of 1-2 sentences each
+4. Preserve all original words, phrases and meaning
+
+Return ONLY the correctly formatted JSON array with no additional explanation.`
+        }
+      ],
+      temperature: 0.1,
+      max_tokens: 32768,
+      response_format: { type: 'json_object' }
+    });
+
+    // Process the response
+    try {
+      const content = response.data.choices[0].message.content;
+      const parsed = typeof content === 'string' ? JSON.parse(content) : content;
+      
+      // If we get an array directly
+      if (Array.isArray(parsed)) {
+        return parsed.map((segment, index) => ({
+          speaker: segment.speaker || `Speaker ${index % 2 + 1}`,
+          text: segment.text || "",
+          start_time: segment.start_time || index,
+          end_time: segment.end_time || (index + 1)
+        }));
+      }
+      
+      // If we get an array within an object
+      if (parsed.segments && Array.isArray(parsed.segments)) {
+        return parsed.segments;
+      }
+      
+      // If we get a conversation array
+      if (parsed.conversation && Array.isArray(parsed.conversation)) {
+        return parsed.conversation.map((segment, index) => ({
+          speaker: segment.speaker || `Speaker ${index % 2 + 1}`,
+          text: segment.text || "",
+          start_time: segment.start_time || index,
+          end_time: segment.end_time || (index + 1)
+        }));
+      }
+      
+      // Fallback
+      return [{
+        speaker: "Speaker 1",
+        text: typeof transcription === 'string' ? transcription : JSON.stringify(transcription),
+        start_time: 0,
+        end_time: 1
+      }];
+    } catch (err) {
+      console.error("Error parsing clean transcript response:", err);
+      return [{
+        speaker: "Speaker 1",
+        text: typeof transcription === 'string' ? transcription : JSON.stringify(transcription),
+        start_time: 0,
+        end_time: 1
+      }];
+    }
+  } catch (error) {
+    console.error('Clean transcript error:', error);
+    // Return original in case of error
+    if (typeof transcription === 'string') {
+      return [{
+        speaker: "Speaker 1",
+        text: transcription,
+        start_time: 0,
+        end_time: 1
+      }];
+    }
+    return Array.isArray(transcription) ? transcription : [transcription];
+  }
+};
+
+/**
+ * Generate insights from transcription
+ * @param {Array} transcription - The diarized transcription array
+ * @returns {Promise} - Promise with insights analysis
+ */
+export const generateInsights = async (transcription) => {
+  try {
+    // Use Llama 3.3 70B with Groq to analyze the transcription
+    const response = await groqClient.post('/chat/completions', {
+      model: 'llama-3.3-70b-versatile',
+      messages: [
+        {
+          role: 'system',
+          content: 'You are an expert AI assistant specialized in sales call analysis and coaching. Your role is to provide comprehensive insights from sales call transcripts, helping sales representatives improve their performance. You analyze call transcripts to identify strengths, areas for improvement, and actionable recommendations.'
+        },
+        {
+          role: 'user',
+          content: `Please analyze this sales call transcription and provide detailed insights. I need:
+
+1. A comprehensive summary of the call (3-4 sentences)
+2. An overall call rating (as a percentage)
+3. 3-5 specific strengths demonstrated in the call
+4. 3-5 areas for improvement with actionable advice
+5. A sentiment analysis of the buyer's intent (Very Interested, Interested, Neutral, Not Interested, Objecting)
+6. Key topics discussed during the call
+
+Format your response as valid JSON with the following structure:
+{
+  "summary": "Comprehensive summary of the call...",
+  "rating": 85,
+  "strengths": ["Strength 1", "Strength 2", "Strength 3"],
+  "areas_for_improvement": ["Area 1", "Area 2", "Area 3"],
+  "buyer_intent": "Interested",
+  "topics": ["Topic 1", "Topic 2", "Topic 3"]
+}
+
+Here's the call transcript: ${JSON.stringify(transcription)}`
+        }
+      ],
+      temperature: 0.2,
+      max_tokens: 32768,
+      response_format: { type: 'json_object' }
+    });
+    
+    // Return the generated insights
+    return response.data.choices[0].message.content;
+  } catch (error) {
+    console.error('Insights generation error:', error);
+    throw error;
+  }
+};
+
 export default {
   transcribeAudio,
   diarizeTranscription,
   correctSpeakerAssignment,
   mergeSegments,
-  splitSegment
+  splitSegment,
+  cleanTranscriptWithGroq,
+  generateInsights
 };
