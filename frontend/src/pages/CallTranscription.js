@@ -18,6 +18,7 @@ import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DownloadIcon from '@mui/icons-material/Download';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 import CircularProgress from '@mui/material/CircularProgress';
 import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -29,6 +30,7 @@ import {
   saveAudioFile, 
   getCallAudio 
 } from '../utils/callsService';
+import { cleanTranscriptWithGroq } from '../utils/groqApiClient';
 
 const CallTranscription = () => {
   const { user } = useAuth();
@@ -67,6 +69,65 @@ const CallTranscription = () => {
   // Flag to determine when to show the Transcribe button
   const showTranscribeButton = audioFile && !hasValidTranscription && !loading;
   
+  // Flag to determine when to show transcript without audio features
+  const showSimpleTranscript = hasValidTranscription && !audioFile;
+  
+  // Force logging for debugging
+  useEffect(() => {
+    console.log("Simple transcript view status:", {
+      showSimpleTranscript,
+      hasValidTranscription: !!hasValidTranscription,
+      audioFile: !!audioFile,
+      diarizedTranscription: diarizedTranscription ? 
+        (Array.isArray(diarizedTranscription) ? `Array[${diarizedTranscription.length}]` : typeof diarizedTranscription) 
+        : null
+    });
+  }, [showSimpleTranscript, hasValidTranscription, audioFile, diarizedTranscription]);
+  
+  // Helper to normalize transcription data from different formats
+  const getProcessedTranscription = () => {
+    if (!diarizedTranscription) return [];
+    
+    // If it's already in our expected array format
+    if (Array.isArray(diarizedTranscription) && 
+        diarizedTranscription.length > 0 && 
+        diarizedTranscription[0].speaker) {
+      return diarizedTranscription;
+    }
+    
+    // If it's a string (JSON), try to parse it
+    if (typeof diarizedTranscription === 'string') {
+      try {
+        const parsed = JSON.parse(diarizedTranscription);
+        if (parsed.conversation && Array.isArray(parsed.conversation)) {
+          return parsed.conversation.map((item, index) => ({
+            speaker: item.speaker || `Speaker ${index % 2 + 1}`,
+            text: item.text || "",
+            start_time: index, // Dummy values for compatibility
+            end_time: index + 1
+          }));
+        }
+        return parsed;
+      } catch (e) {
+        console.error("Error parsing transcription string:", e);
+        return [];
+      }
+    }
+    
+    // If it's an object with conversation array
+    if (diarizedTranscription.conversation && Array.isArray(diarizedTranscription.conversation)) {
+      return diarizedTranscription.conversation.map((item, index) => ({
+        speaker: item.speaker || `Speaker ${index % 2 + 1}`,
+        text: item.text || "",
+        start_time: index, // Dummy values for compatibility
+        end_time: index + 1
+      }));
+    }
+    
+    // Default fallback
+    return diarizedTranscription;
+  };
+  
   // Debug logging for component state
   useEffect(() => {
     console.log("Component state:", {
@@ -77,12 +138,13 @@ const CallTranscription = () => {
         : null,
       hasValidTranscription,
       showTranscribeButton,
+      showSimpleTranscript,
       loading,
       showAudioUpload,
       existingTranscription,
       showTranscriptionUpload
     });
-  }, [audioFile, audioUrl, diarizedTranscription, hasValidTranscription, showTranscribeButton, loading, showAudioUpload, existingTranscription, showTranscriptionUpload]);
+  }, [audioFile, audioUrl, diarizedTranscription, hasValidTranscription, showTranscribeButton, showSimpleTranscript, loading, showAudioUpload, existingTranscription, showTranscriptionUpload]);
   
   // Initialize - fetch call data and existing transcription if call ID is available
   useEffect(() => {
@@ -132,6 +194,10 @@ const CallTranscription = () => {
           setShowSnackbar(true);
           // Don't show upload panels if we have a valid transcription
           setShowTranscriptionUpload(false);
+          
+          // We'll determine audio status after trying to load it,
+          // this is just a flag to remember we have a valid transcription
+          const hasValidTranscriptionFlag = true;
         } else if (hasTranscriptionMetadata) {
           // We have metadata indicating a transcription exists, but couldn't load the content
           setDiarizedTranscription([{
@@ -153,7 +219,20 @@ const CallTranscription = () => {
         
         // Check for existing audio file using the enhanced getCallAudio function
         setProcessingStep('Loading audio file...');
-        const audioResult = await getCallAudio(callId);
+        
+        // First check sessionStorage for a direct audio URL
+        const sessionAudioUrl = sessionStorage.getItem(`audio_url_${callId}`);
+        let audioResult;
+        
+        if (sessionAudioUrl) {
+          console.log(`Found audio URL in sessionStorage for call ${callId}`);
+          setAudioUrl(sessionAudioUrl);
+          setAudioFile(new File(["dummy content"], "audio_file.mp3", { type: 'audio/mpeg' }));
+          audioResult = { source: 'sessionStorage', url: sessionAudioUrl, file: true };
+        } else {
+          // If not in sessionStorage, try other methods
+          audioResult = await getCallAudio(callId);
+        }
         
         if (audioResult) {
           console.log(`Found audio for call ${callId} from source: ${audioResult.source}`);
@@ -185,6 +264,13 @@ const CallTranscription = () => {
           setShowAudioUpload(true);
         }
         
+        // Check if we have a valid transcription but no audio, to show simple transcript view
+        if (existingTranscript && Array.isArray(existingTranscript) && existingTranscript.length > 0 && 
+            (!audioResult || (!audioResult.url && !audioResult.file))) {
+          console.log("Transcription exists without audio - showing simple transcript view");
+          setShowSimpleTranscript(true);
+        }
+        
         setInitialized(true);
         setLoading(false);
       } catch (err) {
@@ -207,6 +293,11 @@ const CallTranscription = () => {
       setAudioFile(file);
       const url = URL.createObjectURL(file);
       setAudioUrl(url);
+      
+      // If we were in simple transcript mode, switch to full mode with audio
+      if (showSimpleTranscript) {
+        setShowSimpleTranscript(false);
+      }
       
       // Save the audio file to multiple locations
       saveAudioFileMultiple(file);
@@ -290,6 +381,17 @@ const CallTranscription = () => {
         }));
         
         console.log(`Call audio metadata saved for call ${callId}`);
+        
+        // Store the file itself in localStorage for direct access
+        // Convert file to data URL for storage in sessionStorage
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const dataUrl = e.target.result;
+          sessionStorage.setItem(`audio_url_${callId}`, dataUrl);
+          console.log(`Audio file saved as data URL in sessionStorage for call ${callId}`);
+        };
+        reader.readAsDataURL(file);
+        console.log(`Audio URL saved to sessionStorage for call ${callId}`);
       } catch (metadataError) {
         console.error('Error saving audio metadata:', metadataError);
       }
@@ -330,10 +432,28 @@ const CallTranscription = () => {
       const reader = new FileReader();
       reader.onload = (e) => {
         try {
-          const parsedData = JSON.parse(e.target.result);
-          // Save to localStorage for future use
-          localStorage.setItem(`transcription_${callId}`, e.target.result);
-          setDiarizedTranscription(parsedData);
+          const jsonContent = e.target.result;
+          const parsedData = JSON.parse(jsonContent);
+          
+          // Process transcription data based on format
+          let processedData = parsedData;
+          
+          // If it's in the conversation format, convert it to our expected format
+          if (parsedData.conversation && Array.isArray(parsedData.conversation)) {
+            console.log("Detected conversation format, converting...");
+            processedData = parsedData.conversation.map((item, index) => ({
+              speaker: item.speaker || `Speaker ${index % 2 + 1}`,
+              text: item.text || "",
+              start_time: index,  // Dummy values for compatibility
+              end_time: index + 1
+            }));
+          }
+          
+          // Always save the original JSON as is
+          localStorage.setItem(`transcription_${callId}`, jsonContent);
+          
+          // Set the processed data to state
+          setDiarizedTranscription(processedData);
           setExistingTranscription(true);
           setSuccess("Transcription file loaded successfully");
           setShowSnackbar(true);
@@ -678,8 +798,8 @@ const CallTranscription = () => {
             border: '1px solid rgba(0,0,0,0.05)'
           }}
         >
-          {/* Audio upload form is shown when no audio file exists */}
-          {!audioFile ? (
+          {/* Conditional rendering based on audio and transcription availability */}
+          {!audioFile && !showSimpleTranscript ? (
             // Upload prompt when no file is selected
             <Box 
               sx={{ 
@@ -758,51 +878,298 @@ const CallTranscription = () => {
                 />
               </Button>
               
-              {showTranscriptionUpload && (
-                <Box sx={{ 
-                  mt: 4,
-                  p: 3,
-                  borderRadius: '12px',
-                  border: '1px dashed rgba(0,0,0,0.12)',
-                  bgcolor: 'rgba(0,0,0,0.02)',
-                  maxWidth: '400px'
-                }}>
-                  <Typography 
-                    variant="body2" 
-                    color="text.secondary" 
-                    sx={{ 
-                      mb: 1.5,
-                      fontWeight: 500
-                    }}
-                  >
-                    Already have a transcription file?
+            </Box>
+          ) : showSimpleTranscript ? (
+            // Special view for when transcription exists but audio is missing
+            <Box sx={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+              {/* Info panel to show transcription found but audio missing */}
+              <Box sx={{ 
+                p: 3, 
+                bgcolor: 'rgba(255, 152, 0, 0.1)', 
+                borderBottom: '1px solid rgba(255, 152, 0, 0.3)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 2
+              }}>
+                <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                  <Typography variant="body1" sx={{ fontWeight: 500, color: '#e65100' }}>
+                    Transcription found in database, but the audio file is missing.
                   </Typography>
+                </Box>
+                
+                <Box sx={{ display: 'flex', gap: 2 }}>
+                  <Button
+                    variant="contained"
+                    color="warning"
+                    onClick={async () => {
+                      try {
+                        setLoading(true);
+                        setProcessingStep('Cleaning transcription format...');
+                        
+                        // Call the Groq function to clean the transcript
+                        const cleanedTranscript = await cleanTranscriptWithGroq(diarizedTranscription);
+                        
+                        // Update the state with cleaned transcript
+                        setDiarizedTranscription(cleanedTranscript);
+                        
+                        // Save the cleaned transcript
+                        await saveTranscription(callId, cleanedTranscript);
+                        
+                        setSuccess("Transcription cleaned and reformatted successfully");
+                        setShowSnackbar(true);
+                      } catch (error) {
+                        console.error('Error cleaning transcript:', error);
+                        setError("Failed to clean transcript format");
+                        setShowSnackbar(true);
+                      } finally {
+                        setLoading(false);
+                      }
+                    }}
+                    sx={{ 
+                      textTransform: 'none',
+                      fontWeight: 600
+                    }}
+                    disabled={loading}
+                  >
+                    Clean Messy Transcript
+                  </Button>
+                  
                   <Button
                     component="label"
                     variant="outlined"
                     size="small"
                     startIcon={<CloudUploadIcon fontSize="small" />}
-                    sx={{
-                      borderRadius: '6px',
+                    sx={{ 
+                      borderColor: '#ff9800',
+                      color: '#ff9800',
+                      '&:hover': { 
+                        borderColor: '#e65100',
+                        bgcolor: 'rgba(255, 152, 0, 0.04)'
+                      },
                       textTransform: 'none',
-                      borderColor: 'var(--primary-color)',
-                      color: 'var(--primary-color)',
-                      '&:hover': {
-                        borderColor: 'var(--primary-hover)',
-                        bgcolor: 'rgba(79, 70, 229, 0.04)'
-                      }
+                      fontWeight: 500
                     }}
                   >
-                    Upload Transcription
+                    Upload Audio
                     <input
                       type="file"
                       hidden
-                      accept="application/json"
-                      onChange={handleTranscriptionFileUpload}
+                      accept="audio/*"
+                      onChange={handleFileChange}
                     />
                   </Button>
                 </Box>
-              )}
+              </Box>
+              
+              {/* Simple transcript display */}
+              <Box sx={{ 
+                flex: 1, 
+                display: 'flex',
+                flexDirection: 'column',
+                p: 0,
+                backgroundColor: '#ffffff',
+                position: 'relative'
+              }}>
+                <Box sx={{ 
+                  p: 3, 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between',
+                  borderBottom: '1px solid #f0f0f0',
+                  position: 'sticky',
+                  top: 0,
+                  zIndex: 10,
+                  backgroundColor: '#ffffff',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.05)'
+                }}>
+                  <Typography 
+                    variant="h6" 
+                    fontWeight="700"
+                    sx={{
+                      color: 'var(--heading-color)',
+                      letterSpacing: '-0.3px'
+                    }}
+                  >
+                    Transcript (Simple View)
+                  </Typography>
+                  
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                    <Button
+                      variant="contained"
+                      color="warning"
+                      size="large"
+                      onClick={async () => {
+                        try {
+                          setLoading(true);
+                          setProcessingStep('Cleaning transcription format...');
+                          
+                          // Call the Groq function to clean the transcript
+                          const cleanedTranscript = await cleanTranscriptWithGroq(diarizedTranscription);
+                          
+                          // Update the state with cleaned transcript
+                          setDiarizedTranscription(cleanedTranscript);
+                          
+                          // Save the cleaned transcript
+                          await saveTranscription(callId, cleanedTranscript);
+                          
+                          setSuccess("Transcription cleaned and reformatted successfully");
+                          setShowSnackbar(true);
+                        } catch (error) {
+                          console.error('Error cleaning transcript:', error);
+                          setError("Failed to clean transcript format");
+                          setShowSnackbar(true);
+                        } finally {
+                          setLoading(false);
+                        }
+                      }}
+                      sx={{
+                        textTransform: 'none',
+                        fontWeight: 600,
+                        mr: 1,
+                        py: 1.5,
+                        px: 2
+                      }}
+                      disabled={loading}
+                    >
+                      Clean Format
+                    </Button>
+                    
+                    <Button
+                      variant="contained"
+                      startIcon={<DownloadIcon />}
+                      onClick={handleDownloadTranscript}
+                      sx={{
+                        bgcolor: 'var(--primary-color)',
+                        fontWeight: 500,
+                        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                        '&:hover': { 
+                          bgcolor: 'var(--primary-hover)', 
+                          boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                        },
+                        textTransform: 'none',
+                        borderRadius: '6px',
+                        padding: '6px 12px',
+                        fontSize: '0.85rem',
+                        width: 'auto',
+                        display: 'inline-flex',
+                        flexShrink: 0
+                      }}
+                    >
+                      Download
+                    </Button>
+                    
+                    <Tooltip title="Transcription saved to project storage">
+                      <Chip 
+                        icon={<CheckCircleIcon />}
+                        label="Saved" 
+                        color="success"
+                        size="small"
+                        sx={{
+                          fontWeight: 500,
+                          px: 1,
+                          '& .MuiChip-icon': {
+                            fontSize: '1rem'
+                          }
+                        }}
+                      />
+                    </Tooltip>
+                  </Box>
+                </Box>
+                
+                {/* Simple transcript content */}
+                <Box 
+                  sx={{
+                    p: 4, 
+                    height: 'calc(100vh - 280px)', 
+                    overflowY: 'auto',
+                    '&::-webkit-scrollbar': {
+                      width: '8px',
+                    },
+                    '&::-webkit-scrollbar-track': {
+                      backgroundColor: 'rgba(0,0,0,0.05)',
+                      borderRadius: '10px'
+                    },
+                    '&::-webkit-scrollbar-thumb': {
+                      backgroundColor: 'rgba(0,0,0,0.2)',
+                      borderRadius: '10px',
+                      '&:hover': {
+                        backgroundColor: 'rgba(0,0,0,0.3)'
+                      }
+                    }
+                  }}
+                >
+                  {getProcessedTranscription().map((segment, index) => (
+                    <Box 
+                      key={index}
+                      sx={{ 
+                        mb: 4,
+                        display: 'flex',
+                        width: '100%'
+                      }}
+                    >
+                      <Box 
+                        sx={{ 
+                          minWidth: '120px', 
+                          mr: 3,
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'flex-start'
+                        }}
+                      >
+                        <Box
+                          sx={{
+                            bgcolor: segment.speaker === 'Speaker 1' || segment.speaker === 'Agent' || segment.speaker === 'Sales Rep'
+                              ? 'var(--primary-color)' 
+                              : segment.speaker === 'Speaker 2' || segment.speaker === 'Caller' || segment.speaker === 'Customer' || segment.speaker === 'Client'
+                                ? '#E57373' 
+                                : index % 2 === 0 ? 'var(--primary-color)' : '#E57373',
+                            color: 'white',
+                            width: '110px',
+                            textAlign: 'center',
+                            py: 1,
+                            borderRadius: '8px',
+                            fontWeight: 600,
+                            fontSize: '0.9rem',
+                            boxShadow: segment.speaker === 'Speaker 1' || segment.speaker === 'Agent' || segment.speaker === 'Sales Rep' || index % 2 === 0
+                              ? '0 3px 8px rgba(79, 70, 229, 0.25)' 
+                              : '0 3px 8px rgba(229, 115, 115, 0.25)',
+                            letterSpacing: '0.3px'
+                          }}
+                        >
+                          {segment.speaker}
+                        </Box>
+                      </Box>
+                      
+                      <Box
+                        sx={{
+                          flex: 1,
+                          p: 3,
+                          borderRadius: '12px',
+                          bgcolor: '#f9fafb',
+                          boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                          border: '1px solid rgba(0,0,0,0.05)'
+                        }}
+                      >
+                        <Typography 
+                          variant="body1" 
+                          sx={{ 
+                            lineHeight: 1.7,
+                            color: 'text.primary',
+                            wordBreak: 'break-word',
+                            fontSize: '1rem',
+                            fontWeight: 400,
+                            letterSpacing: '0.015em'
+                          }}
+                        >
+                          {segment.text}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  ))}
+                </Box>
+              </Box>
             </Box>
           ) : (
             // Main content when file is selected or transcription exists
@@ -1068,7 +1435,71 @@ const CallTranscription = () => {
                     </Typography>
                     
                     {existingTranscription && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                        <Button
+                          variant="contained"
+                          color="secondary"
+                          startIcon={<AssessmentIcon />}
+                          onClick={() => navigate('/dashboard/call-insights', { state: { callData } })}
+                          sx={{
+                            fontWeight: 600,
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                            '&:hover': { 
+                              boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
+                            },
+                            textTransform: 'none',
+                            borderRadius: '6px',
+                            padding: '6px 12px',
+                            fontSize: '0.85rem',
+                            display: 'inline-flex',
+                            flexShrink: 0
+                          }}
+                        >
+                          Generate Insights
+                        </Button>
+                        
+                        <Button
+                          variant="outlined"
+                          onClick={async () => {
+                            try {
+                              setLoading(true);
+                              setProcessingStep('Cleaning transcription format...');
+                              
+                              // Call the Groq function to clean the transcript
+                              const cleanedTranscript = await cleanTranscriptWithGroq(diarizedTranscription);
+                              
+                              // Update the state with cleaned transcript
+                              setDiarizedTranscription(cleanedTranscript);
+                              
+                              // Save the cleaned transcript
+                              await saveTranscription(callId, cleanedTranscript);
+                              
+                              setSuccess("Transcription cleaned and reformatted successfully");
+                              setShowSnackbar(true);
+                            } catch (error) {
+                              console.error('Error cleaning transcript:', error);
+                              setError("Failed to clean transcript format");
+                              setShowSnackbar(true);
+                            } finally {
+                              setLoading(false);
+                            }
+                          }}
+                          sx={{
+                            borderColor: 'var(--primary-color)',
+                            color: 'var(--primary-color)',
+                            '&:hover': { 
+                              borderColor: 'var(--primary-hover)',
+                              bgcolor: 'rgba(79, 70, 229, 0.04)'
+                            },
+                            textTransform: 'none',
+                            fontWeight: 500,
+                            mr: 1
+                          }}
+                          disabled={loading}
+                        >
+                          Clean Format
+                        </Button>
+                        
                         <Button
                           variant="contained"
                           startIcon={<DownloadIcon />}
@@ -1197,7 +1628,7 @@ const CallTranscription = () => {
                           }
                         }}
                     >
-                      {diarizedTranscription.map((segment, index) => (
+                      {getProcessedTranscription().map((segment, index) => (
                         <Box 
                           key={index}
                           ref={isSegmentActive(segment.start_time, segment.end_time) ? activeSegmentRef : null}
@@ -1218,7 +1649,11 @@ const CallTranscription = () => {
                           >
                             <Box
                               sx={{
-                                bgcolor: segment.speaker === 'Speaker 1' ? 'var(--primary-color)' : '#E57373',
+                                bgcolor: segment.speaker === 'Speaker 1' || segment.speaker === 'Agent' || segment.speaker === 'Sales Rep'
+                                  ? 'var(--primary-color)' 
+                                  : segment.speaker === 'Speaker 2' || segment.speaker === 'Caller' || segment.speaker === 'Customer' || segment.speaker === 'Client'
+                                    ? '#E57373' 
+                                    : index % 2 === 0 ? 'var(--primary-color)' : '#E57373',
                                 color: 'white',
                                 width: '110px',
                                 textAlign: 'center',
@@ -1227,7 +1662,7 @@ const CallTranscription = () => {
                                 mb: 1.5,
                                 fontWeight: 600,
                                 fontSize: '0.9rem',
-                                boxShadow: segment.speaker === 'Speaker 1' 
+                                boxShadow: segment.speaker === 'Speaker 1' || segment.speaker === 'Agent' || segment.speaker === 'Sales Rep' || index % 2 === 0
                                   ? '0 3px 8px rgba(79, 70, 229, 0.25)' 
                                   : '0 3px 8px rgba(229, 115, 115, 0.25)',
                                 letterSpacing: '0.3px'
@@ -1264,17 +1699,21 @@ const CallTranscription = () => {
                               p: 3,
                               borderRadius: '12px',
                               bgcolor: currentTime >= segment.start_time && currentTime <= segment.end_time 
-                                ? (segment.speaker === 'Speaker 1' ? 'var(--primary-light)' : '#FFEBEE')
+                                ? (segment.speaker === 'Speaker 1' || segment.speaker === 'Agent' || segment.speaker === 'Sales Rep' || index % 2 === 0 
+                                  ? 'var(--primary-light)' 
+                                  : '#FFEBEE')
                                 : '#f9fafb',
                               transition: 'all 0.3s ease',
                               boxShadow: currentTime >= segment.start_time && currentTime <= segment.end_time
-                                ? (segment.speaker === 'Speaker 1' 
+                                ? (segment.speaker === 'Speaker 1' || segment.speaker === 'Agent' || segment.speaker === 'Sales Rep' || index % 2 === 0
                                   ? '0 4px 12px rgba(79, 70, 229, 0.15)' 
                                   : '0 4px 12px rgba(229, 115, 115, 0.15)')
                                 : '0 1px 3px rgba(0,0,0,0.05)',
                               border: '1px solid',
                               borderColor: currentTime >= segment.start_time && currentTime <= segment.end_time
-                                ? (segment.speaker === 'Speaker 1' ? 'rgba(79, 70, 229, 0.2)' : 'rgba(229, 115, 115, 0.2)')
+                                ? (segment.speaker === 'Speaker 1' || segment.speaker === 'Agent' || segment.speaker === 'Sales Rep' || index % 2 === 0 
+                                  ? 'rgba(79, 70, 229, 0.2)' 
+                                  : 'rgba(229, 115, 115, 0.2)')
                                 : 'rgba(0,0,0,0.05)',
                               position: 'relative',
                               transformOrigin: 'center',
@@ -1304,7 +1743,9 @@ const CallTranscription = () => {
                                     style={{
                                       fontWeight: isWordActive(word.start_time, word.end_time) ? 700 : 400,
                                       backgroundColor: isWordActive(word.start_time, word.end_time) 
-                                        ? (segment.speaker === 'Speaker 1' ? 'var(--primary-color)' : '#E57373') 
+                                        ? (segment.speaker === 'Speaker 1' || segment.speaker === 'Agent' || segment.speaker === 'Sales Rep' 
+                                          ? 'var(--primary-color)' 
+                                          : '#E57373') 
                                         : 'transparent',
                                       color: isWordActive(word.start_time, word.end_time) ? 'white' : 'inherit',
                                       padding: isWordActive(word.start_time, word.end_time) ? '3px 6px' : '2px 0',
@@ -1313,7 +1754,7 @@ const CallTranscription = () => {
                                       cursor: 'pointer',
                                       transition: 'all 0.15s ease',
                                       boxShadow: isWordActive(word.start_time, word.end_time) 
-                                        ? (segment.speaker === 'Speaker 1' 
+                                        ? (segment.speaker === 'Speaker 1' || segment.speaker === 'Agent' || segment.speaker === 'Sales Rep'
                                           ? '0 2px 5px rgba(79, 70, 229, 0.3)' 
                                           : '0 2px 5px rgba(229, 115, 115, 0.3)') 
                                         : 'none',

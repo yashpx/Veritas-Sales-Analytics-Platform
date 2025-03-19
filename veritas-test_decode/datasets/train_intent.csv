@@ -1,0 +1,493 @@
+Text,Intent
+"It’s not a fit for us, but I appreciate the information.",Disinterested
+This sounds exactly like what we need. How can we get started?,Highly Interested
+"Thanks, but we’re not interested at this time.",Disinterested
+I'd like to learn more before making a decision.,Interested
+I'd like to learn more before making a decision.,Interested
+"Thanks, but we’re not interested at this time.",Disinterested
+This is not a priority for us at the moment.,Disinterested
+I'd like to learn more before making a decision.,Interested
+This sounds exactly like what we need. How can we get started?,Highly Interested
+I have no interest in this at all.,Highly Disinterested
+I love this solution. How do we sign up?,Highly Interested
+"I think this could work, but I need to check with my team.",Interested
+I have no interest in this at all.,Highly Disinterested
+This sounds exactly like what we need. How can we get started?,Highly Interested
+I don’t think this is what we’re looking for right now.,Disinterested
+This is not a priority for us at the moment.,Disinterested
+"I’m not interested, and I won’t change my mind.",Highly Disinterested
+This sounds exactly like what we need. How can we get started?,Highly Interested
+"Thanks, but we’re not interested at this time.",Disinterested
+I don’t see any value in this whatsoever.,Highly Disinterested
+"I’m not interested, and I won’t change my mind.",Highly Disinterested
+Take me off your list.,Highly Disinterested
+"It’s an interesting idea, but I need more time to think.",Neutral
+I don’t see a need for this in our business.,Disinterested
+"We’re ready to move forward, what’s the next step?",Highly Interested
+This is completely irrelevant to my business.,Highly Disinterested
+I don’t see any value in this whatsoever.,Highly Disinterested
+"I’m not sure if this fits our needs, but I’m open to hearing more.",Neutral
+"I think this could work, but I need to check with my team.",Interested
+I don’t think this is what we’re looking for right now.,Disinterested
+Take me off your list.,Highly Disinterested
+I don’t think this is what we’re looking for right now.,Disinterested
+I have no interest in this at all.,Highly Disinterested
+"I think this could work, but I need to check with my team.",Interested
+"I'm really interested, can you send me the pricing details?",Highly Interested
+"It’s not a fit for us, but I appreciate the information.",Disinterested
+I have no interest in this at all.,Highly Disinterested
+I love this solution. How do we sign up?,Highly Interested
+"It’s an interesting idea, but I need more time to think.",Neutral
+This sounds exactly like what we need. How can we get started?,Highly Interested
+"It’s not a fit for us, but I appreciate the information.",Disinterested
+Can you tell me about the enterprise pricing options?,Highly Interested
+Please stop contacting me about this.,Highly Disinterested
+This looks promising. Can you provide more details?,Interested
+"I'm really interested, can you send me the pricing details?",Highly Interested
+I love this solution. How do we sign up?,Highly Interested
+"We’re ready to move forward, what’s the next step?",Highly Interested
+"We’re ready to move forward, what’s the next step?",Highly Interested
+I don’t see any value in this whatsoever.,Highly Disinterested
+I love this solution. How do we sign up?,Highly Interested
+"We’re ready to move forward, what’s the next step?",Highly Interested
+This looks promising. Can you provide more details?,Interested
+"We might be interested, can you share some case studies?",Interested
+Please stop contacting me about this.,Highly Disinterested
+"I think this could work, but I need to check with my team.",Interested
+"We’re ready to move forward, what’s the next step?",Highly Interested
+"I'm considering this, but I have a few questions.",Interested
+"We’re ready to move forward, what’s the next step?",Highly Interested
+"I don’t have a strong opinion yet, let me get back to you.",Neutral
+I’d like to schedule a demo as soon as possible.,Highly Interested
+Take me off your list.,Highly Disinterested
+"I see the value, but I’m not ready to commit.",Neutral
+I don’t think this is what we’re looking for right now.,Disinterested
+This is completely irrelevant to my business.,Highly Disinterested
+"We’re ready to move forward, what’s the next step?",Highly Interested
+I’d like to schedule a demo as soon as possible.,Highly Interested
+Please stop contacting me about this.,Highly Disinterested
+I’d like to schedule a demo as soon as possible.,Highly Interested
+"I don’t have a strong opinion yet, let me get back to you.",Neutral
+This is not a priority for us at the moment.,Disinterested
+We’re using a different solution and are happy with it.,Disinterested
+We’re using a different solution and are happy with it.,Disinterested
+"I’m not sure if this fits our needs, but I’m open to hearing more.",Neutral
+"I don’t have a strong opinion yet, let me get back to you.",Neutral
+This is not a priority for us at the moment.,Disinterested
+"Thanks, but we’re not interested at this time.",Disinterested
+I need to review this with my manager before deciding.,Neutral
+"We’re ready to move forward, what’s the next step?",Highly Interested
+"I’m not interested, and I won’t change my mind.",Highly Disinterested
+I don’t see any value in this whatsoever.,Highly Disinterested
+"We might be interested, can you share some case studies?",Interested
+"We’re ready to move forward, what’s the next step?",Highly Interested
+"I’m not interested, and I won’t change my mind.",Highly Disinterested
+"Sounds good, but I need to compare it with other options first.",Interested
+"Thanks, but we’re not interested at this time.",Disinterested
+"I'm really interested, can you send me the pricing details?",Highly Interested
+"We might be interested, can you share some case studies?",Interested
+Take me off your list.,Highly Disinterested
+"Thanks, but we’re not interested at this time.",Disinterested
+"I don’t have a strong opinion yet, let me get back to you.",Neutral
+I don’t see a need for this in our business.,Disinterested
+Take me off your list.,Highly Disinterested
+This is not a priority for us at the moment.,Disinterested
+I don’t see a need for this in our business.,Disinterested
+Take me off your list.,Highly Disinterested
+We’re using a different solution and are happy with it.,Disinterested
+This sounds exactly like what we need. How can we get started?,Highly Interested
+I’d like to schedule a demo as soon as possible.,Highly Interested
+I don’t see any value in this whatsoever.,Highly Disinterested
+I’d like to schedule a demo as soon as possible.,Highly Interested
+"I’m not sure if this fits our needs, but I’m open to hearing more.",Neutral
+Please stop contacting me about this.,Highly Disinterested
+This sounds exactly like what we need. How can we get started?,Highly Interested
+We’re using a different solution and are happy with it.,Disinterested
+We’re using a different solution and are happy with it.,Disinterested
+This sounds exactly like what we need. How can we get started?,Highly Interested
+We’re using a different solution and are happy with it.,Disinterested
+"This might work, but we have other priorities right now.",Neutral
+"It’s not a fit for us, but I appreciate the information.",Disinterested
+"I'm considering this, but I have a few questions.",Interested
+"I'm considering this, but I have a few questions.",Interested
+Please stop contacting me about this.,Highly Disinterested
+I don’t think this is what we’re looking for right now.,Disinterested
+This sounds exactly like what we need. How can we get started?,Highly Interested
+I have no interest in this at all.,Highly Disinterested
+I need to review this with my manager before deciding.,Neutral
+"This might work, but we have other priorities right now.",Neutral
+"I see the value, but I’m not ready to commit.",Neutral
+"I think this could work, but I need to check with my team.",Interested
+This sounds exactly like what we need. How can we get started?,Highly Interested
+"This might work, but we have other priorities right now.",Neutral
+"I'm considering this, but I have a few questions.",Interested
+I don’t see a need for this in our business.,Disinterested
+I'd like to learn more before making a decision.,Interested
+"It’s an interesting idea, but I need more time to think.",Neutral
+"I’m not sure if this fits our needs, but I’m open to hearing more.",Neutral
+"I’m not interested, and I won’t change my mind.",Highly Disinterested
+"I don’t have a strong opinion yet, let me get back to you.",Neutral
+I'd like to learn more before making a decision.,Interested
+"It’s not a fit for us, but I appreciate the information.",Disinterested
+I’d like to schedule a demo as soon as possible.,Highly Interested
+"We might be interested, can you share some case studies?",Interested
+Please stop contacting me about this.,Highly Disinterested
+"I’m not sure if this fits our needs, but I’m open to hearing more.",Neutral
+I'd like to learn more before making a decision.,Interested
+"I'm really interested, can you send me the pricing details?",Highly Interested
+"We might be interested, can you share some case studies?",Interested
+I’d like to schedule a demo as soon as possible.,Highly Interested
+I love this solution. How do we sign up?,Highly Interested
+"I see the value, but I’m not ready to commit.",Neutral
+Can you tell me about the enterprise pricing options?,Highly Interested
+"It’s an interesting idea, but I need more time to think.",Neutral
+I don’t see any value in this whatsoever.,Highly Disinterested
+"I'm really interested, can you send me the pricing details?",Highly Interested
+"I’m not sure if this fits our needs, but I’m open to hearing more.",Neutral
+"It’s an interesting idea, but I need more time to think.",Neutral
+Can you tell me about the enterprise pricing options?,Highly Interested
+"This might work, but we have other priorities right now.",Neutral
+I need to review this with my manager before deciding.,Neutral
+Please stop contacting me about this.,Highly Disinterested
+This sounds exactly like what we need. How can we get started?,Highly Interested
+"Sounds good, but I need to compare it with other options first.",Interested
+"I'm really interested, can you send me the pricing details?",Highly Interested
+Can you tell me about the enterprise pricing options?,Highly Interested
+Please stop contacting me about this.,Highly Disinterested
+I don’t see a need for this in our business.,Disinterested
+Can you tell me about the enterprise pricing options?,Highly Interested
+I need to review this with my manager before deciding.,Neutral
+This is completely irrelevant to my business.,Highly Disinterested
+I love this solution. How do we sign up?,Highly Interested
+"I think this could work, but I need to check with my team.",Interested
+This is not a priority for us at the moment.,Disinterested
+This is completely irrelevant to my business.,Highly Disinterested
+I’d like to schedule a demo as soon as possible.,Highly Interested
+"I’m not interested, and I won’t change my mind.",Highly Disinterested
+This is completely irrelevant to my business.,Highly Disinterested
+I love this solution. How do we sign up?,Highly Interested
+"We’re ready to move forward, what’s the next step?",Highly Interested
+Take me off your list.,Highly Disinterested
+This looks promising. Can you provide more details?,Interested
+"I'm really interested, can you send me the pricing details?",Highly Interested
+This looks promising. Can you provide more details?,Interested
+I don’t see any value in this whatsoever.,Highly Disinterested
+I'd like to learn more before making a decision.,Interested
+"We might be interested, can you share some case studies?",Interested
+"I'm considering this, but I have a few questions.",Interested
+I don’t think this is what we’re looking for right now.,Disinterested
+"I think this could work, but I need to check with my team.",Interested
+"I think this could work, but I need to check with my team.",Interested
+"Thanks, but we’re not interested at this time.",Disinterested
+"It’s not a fit for us, but I appreciate the information.",Disinterested
+"We might be interested, can you share some case studies?",Interested
+I don’t see any value in this whatsoever.,Highly Disinterested
+"I don’t have a strong opinion yet, let me get back to you.",Neutral
+This is completely irrelevant to my business.,Highly Disinterested
+This looks promising. Can you provide more details?,Interested
+I don’t see a need for this in our business.,Disinterested
+Can you tell me about the enterprise pricing options?,Highly Interested
+"It’s an interesting idea, but I need more time to think.",Neutral
+"We might be interested, can you share some case studies?",Interested
+Take me off your list.,Highly Disinterested
+I don’t see a need for this in our business.,Disinterested
+Please stop contacting me about this.,Highly Disinterested
+I need to review this with my manager before deciding.,Neutral
+"I think this could work, but I need to check with my team.",Interested
+I need to review this with my manager before deciding.,Neutral
+"I think this could work, but I need to check with my team.",Interested
+Can you tell me about the enterprise pricing options?,Highly Interested
+"We might be interested, can you share some case studies?",Interested
+I don’t think this is what we’re looking for right now.,Disinterested
+Please stop contacting me about this.,Highly Disinterested
+I love this solution. How do we sign up?,Highly Interested
+"It’s an interesting idea, but I need more time to think.",Neutral
+"I'm considering this, but I have a few questions.",Interested
+This looks promising. Can you provide more details?,Interested
+"I think this could work, but I need to check with my team.",Interested
+"I see the value, but I’m not ready to commit.",Neutral
+"We’re ready to move forward, what’s the next step?",Highly Interested
+I have no interest in this at all.,Highly Disinterested
+"Thanks, but we’re not interested at this time.",Disinterested
+"I see the value, but I’m not ready to commit.",Neutral
+I'd like to learn more before making a decision.,Interested
+I don’t see a need for this in our business.,Disinterested
+"I see the value, but I’m not ready to commit.",Neutral
+"This might work, but we have other priorities right now.",Neutral
+"Thanks, but we’re not interested at this time.",Disinterested
+I don’t see a need for this in our business.,Disinterested
+"I’m not sure if this fits our needs, but I’m open to hearing more.",Neutral
+I don’t think this is what we’re looking for right now.,Disinterested
+"I see the value, but I’m not ready to commit.",Neutral
+We’re using a different solution and are happy with it.,Disinterested
+"I don’t have a strong opinion yet, let me get back to you.",Neutral
+"I'm really interested, can you send me the pricing details?",Highly Interested
+"I think this could work, but I need to check with my team.",Interested
+I'd like to learn more before making a decision.,Interested
+I don’t see a need for this in our business.,Disinterested
+"I’m not sure if this fits our needs, but I’m open to hearing more.",Neutral
+I don’t see any value in this whatsoever.,Highly Disinterested
+"I’m not sure if this fits our needs, but I’m open to hearing more.",Neutral
+"I'm really interested, can you send me the pricing details?",Highly Interested
+I'd like to learn more before making a decision.,Interested
+I love this solution. How do we sign up?,Highly Interested
+Please stop contacting me about this.,Highly Disinterested
+Can you tell me about the enterprise pricing options?,Highly Interested
+I don’t think this is what we’re looking for right now.,Disinterested
+This is not a priority for us at the moment.,Disinterested
+I don’t think this is what we’re looking for right now.,Disinterested
+I'd like to learn more before making a decision.,Interested
+"Sounds good, but I need to compare it with other options first.",Interested
+"I'm considering this, but I have a few questions.",Interested
+I don’t see a need for this in our business.,Disinterested
+"We might be interested, can you share some case studies?",Interested
+"I’m not interested, and I won’t change my mind.",Highly Disinterested
+I’d like to schedule a demo as soon as possible.,Highly Interested
+"Thanks, but we’re not interested at this time.",Disinterested
+"We might be interested, can you share some case studies?",Interested
+I’d like to schedule a demo as soon as possible.,Highly Interested
+"I'm really interested, can you send me the pricing details?",Highly Interested
+I don’t think this is what we’re looking for right now.,Disinterested
+"I think this could work, but I need to check with my team.",Interested
+I have no interest in this at all.,Highly Disinterested
+"This might work, but we have other priorities right now.",Neutral
+Take me off your list.,Highly Disinterested
+"We might be interested, can you share some case studies?",Interested
+"I’m not sure if this fits our needs, but I’m open to hearing more.",Neutral
+This is completely irrelevant to my business.,Highly Disinterested
+"I think this could work, but I need to check with my team.",Interested
+"Thanks, but we’re not interested at this time.",Disinterested
+"I'm considering this, but I have a few questions.",Interested
+Take me off your list.,Highly Disinterested
+"I don’t have a strong opinion yet, let me get back to you.",Neutral
+"We might be interested, can you share some case studies?",Interested
+I don’t see a need for this in our business.,Disinterested
+Can you tell me about the enterprise pricing options?,Highly Interested
+"I'm considering this, but I have a few questions.",Interested
+"I see the value, but I’m not ready to commit.",Neutral
+Take me off your list.,Highly Disinterested
+"I'm really interested, can you send me the pricing details?",Highly Interested
+"I’m not interested, and I won’t change my mind.",Highly Disinterested
+"I think this could work, but I need to check with my team.",Interested
+"I'm considering this, but I have a few questions.",Interested
+"I don’t have a strong opinion yet, let me get back to you.",Neutral
+"I’m not sure if this fits our needs, but I’m open to hearing more.",Neutral
+"Thanks, but we’re not interested at this time.",Disinterested
+"I’m not sure if this fits our needs, but I’m open to hearing more.",Neutral
+This is not a priority for us at the moment.,Disinterested
+This is not a priority for us at the moment.,Disinterested
+I don’t think this is what we’re looking for right now.,Disinterested
+"This might work, but we have other priorities right now.",Neutral
+This looks promising. Can you provide more details?,Interested
+I don’t think this is what we’re looking for right now.,Disinterested
+"I don’t have a strong opinion yet, let me get back to you.",Neutral
+"I’m not interested, and I won’t change my mind.",Highly Disinterested
+"It’s an interesting idea, but I need more time to think.",Neutral
+I'd like to learn more before making a decision.,Interested
+Take me off your list.,Highly Disinterested
+I need to review this with my manager before deciding.,Neutral
+I have no interest in this at all.,Highly Disinterested
+I don’t think this is what we’re looking for right now.,Disinterested
+"I see the value, but I’m not ready to commit.",Neutral
+We’re using a different solution and are happy with it.,Disinterested
+"This might work, but we have other priorities right now.",Neutral
+I don’t see a need for this in our business.,Disinterested
+This is not a priority for us at the moment.,Disinterested
+This looks promising. Can you provide more details?,Interested
+"I think this could work, but I need to check with my team.",Interested
+I don’t think this is what we’re looking for right now.,Disinterested
+I don’t see any value in this whatsoever.,Highly Disinterested
+I don’t see any value in this whatsoever.,Highly Disinterested
+I have no interest in this at all.,Highly Disinterested
+Please stop contacting me about this.,Highly Disinterested
+"It’s an interesting idea, but I need more time to think.",Neutral
+"Thanks, but we’re not interested at this time.",Disinterested
+I'd like to learn more before making a decision.,Interested
+"We might be interested, can you share some case studies?",Interested
+This looks promising. Can you provide more details?,Interested
+I need to review this with my manager before deciding.,Neutral
+"It’s an interesting idea, but I need more time to think.",Neutral
+"I think this could work, but I need to check with my team.",Interested
+"Sounds good, but I need to compare it with other options first.",Interested
+This is not a priority for us at the moment.,Disinterested
+"This might work, but we have other priorities right now.",Neutral
+I don’t see any value in this whatsoever.,Highly Disinterested
+This is not a priority for us at the moment.,Disinterested
+This looks promising. Can you provide more details?,Interested
+"It’s an interesting idea, but I need more time to think.",Neutral
+I have no interest in this at all.,Highly Disinterested
+"We might be interested, can you share some case studies?",Interested
+This is not a priority for us at the moment.,Disinterested
+I don’t think this is what we’re looking for right now.,Disinterested
+"I'm considering this, but I have a few questions.",Interested
+I don’t see any value in this whatsoever.,Highly Disinterested
+I’d like to schedule a demo as soon as possible.,Highly Interested
+"I’m not interested, and I won’t change my mind.",Highly Disinterested
+This sounds exactly like what we need. How can we get started?,Highly Interested
+"It’s an interesting idea, but I need more time to think.",Neutral
+This sounds exactly like what we need. How can we get started?,Highly Interested
+"This might work, but we have other priorities right now.",Neutral
+"Sounds good, but I need to compare it with other options first.",Interested
+"Thanks, but we’re not interested at this time.",Disinterested
+"Sounds good, but I need to compare it with other options first.",Interested
+This sounds exactly like what we need. How can we get started?,Highly Interested
+Can you tell me about the enterprise pricing options?,Highly Interested
+"We’re ready to move forward, what’s the next step?",Highly Interested
+"I'm considering this, but I have a few questions.",Interested
+This looks promising. Can you provide more details?,Interested
+I don’t see a need for this in our business.,Disinterested
+I don’t think this is what we’re looking for right now.,Disinterested
+"It’s an interesting idea, but I need more time to think.",Neutral
+"We’re ready to move forward, what’s the next step?",Highly Interested
+I’d like to schedule a demo as soon as possible.,Highly Interested
+I need to review this with my manager before deciding.,Neutral
+Take me off your list.,Highly Disinterested
+I don’t see a need for this in our business.,Disinterested
+"I'm considering this, but I have a few questions.",Interested
+I love this solution. How do we sign up?,Highly Interested
+Please stop contacting me about this.,Highly Disinterested
+Take me off your list.,Highly Disinterested
+"It’s an interesting idea, but I need more time to think.",Neutral
+"I’m not sure if this fits our needs, but I’m open to hearing more.",Neutral
+"It’s an interesting idea, but I need more time to think.",Neutral
+I don’t see any value in this whatsoever.,Highly Disinterested
+This sounds exactly like what we need. How can we get started?,Highly Interested
+"I don’t have a strong opinion yet, let me get back to you.",Neutral
+Please stop contacting me about this.,Highly Disinterested
+I'd like to learn more before making a decision.,Interested
+"I don’t have a strong opinion yet, let me get back to you.",Neutral
+This is completely irrelevant to my business.,Highly Disinterested
+"This might work, but we have other priorities right now.",Neutral
+"I think this could work, but I need to check with my team.",Interested
+I love this solution. How do we sign up?,Highly Interested
+"I’m not sure if this fits our needs, but I’m open to hearing more.",Neutral
+"I see the value, but I’m not ready to commit.",Neutral
+This sounds exactly like what we need. How can we get started?,Highly Interested
+I love this solution. How do we sign up?,Highly Interested
+I’d like to schedule a demo as soon as possible.,Highly Interested
+I need to review this with my manager before deciding.,Neutral
+"Thanks, but we’re not interested at this time.",Disinterested
+I need to review this with my manager before deciding.,Neutral
+I don’t see any value in this whatsoever.,Highly Disinterested
+This sounds exactly like what we need. How can we get started?,Highly Interested
+Take me off your list.,Highly Disinterested
+"I don’t have a strong opinion yet, let me get back to you.",Neutral
+"This might work, but we have other priorities right now.",Neutral
+"I don’t have a strong opinion yet, let me get back to you.",Neutral
+"We might be interested, can you share some case studies?",Interested
+Take me off your list.,Highly Disinterested
+"I think this could work, but I need to check with my team.",Interested
+I’d like to schedule a demo as soon as possible.,Highly Interested
+This looks promising. Can you provide more details?,Interested
+"We might be interested, can you share some case studies?",Interested
+I have no interest in this at all.,Highly Disinterested
+Can you tell me about the enterprise pricing options?,Highly Interested
+I don’t think this is what we’re looking for right now.,Disinterested
+Please stop contacting me about this.,Highly Disinterested
+Can you tell me about the enterprise pricing options?,Highly Interested
+We’re using a different solution and are happy with it.,Disinterested
+This sounds exactly like what we need. How can we get started?,Highly Interested
+"I think this could work, but I need to check with my team.",Interested
+I love this solution. How do we sign up?,Highly Interested
+I don’t see a need for this in our business.,Disinterested
+Take me off your list.,Highly Disinterested
+This is completely irrelevant to my business.,Highly Disinterested
+"It’s an interesting idea, but I need more time to think.",Neutral
+"I see the value, but I’m not ready to commit.",Neutral
+"I’m not interested, and I won’t change my mind.",Highly Disinterested
+I don’t see any value in this whatsoever.,Highly Disinterested
+This is not a priority for us at the moment.,Disinterested
+"I’m not sure if this fits our needs, but I’m open to hearing more.",Neutral
+"I’m not sure if this fits our needs, but I’m open to hearing more.",Neutral
+"I'm open to learning more, but I have some concerns.",Neutral
+"I’d like a demo before making a decision.",Interested
+"We’ve been looking for a solution like this!",Highly Interested
+"We already have a provider for this, so we’ll pass.",Disinterested
+"This could work, but I’d need to discuss it internally first.",Interested
+"I think we need to explore other options.",Disinterested
+"This sounds great. How can we get started?",Highly Interested
+"I’m not sure this is the right time for us.",Neutral
+"Let me check with my team and get back to you.",Interested
+"Thanks, but we’ve already made our decision.",Disinterested
+"We’re interested, but I need more information first.",Interested
+"We’ve already tried something similar and it didn’t work.",Disinterested
+"I love this! Can you send over more details?",Highly Interested
+"I’m not sure this fits our needs, but I’ll think about it.",Neutral
+"I’m not ready to move forward with this.",Neutral
+"Can you provide more details about pricing?",Interested
+"Not a good fit for us right now.",Disinterested
+"We’re already working with someone on this.",Disinterested
+"I’ll pass for now, but thanks for reaching out.",Disinterested
+"This is something we’ve been thinking about, but not sure yet.",Neutral
+"I’m not convinced this will work for us.",Disinterested
+"I’m interested, but I need to see more specifics.",Interested
+"This could definitely work for us. What’s next?",Highly Interested
+"I’m really intrigued by this. How do we sign up?",Highly Interested
+"We’re happy with our current solution, thanks.",Disinterested
+"I’d like to schedule a demo to learn more.",Interested
+"I think this could be useful for us, but I need approval from my manager.",Interested
+"This doesn’t align with our current strategy.",Disinterested
+"I have no interest in this right now.",Highly Disinterested
+"We’re not looking to make a change right now.",Disinterested
+"I need more time to think about this.",Neutral
+"Can you provide a trial or demo?",Interested
+"This isn’t a priority for us at the moment.",Disinterested
+"I think we could make this work. Let’s discuss further.",Highly Interested
+"I'm interested in learning more, but need a few more details first.",Interested
+"I'm not sure this is what we need at the moment.",Neutral
+"I’d love to hear more, but it’s not a fit for us right now.",Neutral
+"We’re not interested in this, but thanks for the offer.",Disinterested
+"Let me get back to you after discussing with my team.",Neutral
+"This looks promising, but we’ll need to think about it.",Neutral
+"We’re not in the market for this right now.",Disinterested
+"This seems interesting, but I don’t think it’s right for us.",Disinterested
+"I’d be happy to discuss more in the future, but not now.",Neutral
+"I’m excited about this! How do we proceed?",Highly Interested
+"We’re not looking for this right now, but maybe in the future.",Neutral
+"This sounds like something we could use. Can you send more info?",Interested
+"We’re satisfied with our current provider.",Disinterested
+"I need to talk this over with my team before deciding.",Interested
+"We’re happy with our current situation, so we’ll pass.",Disinterested
+"This is exactly what we need, let’s move forward.",Highly Interested
+"I’m not sure this is the right fit for us.",Disinterested
+"I’m really interested. Can we set up a call to discuss?",Highly Interested
+"I’ll need to look into this more before deciding.",Neutral
+"This looks great! Let’s get started.",Highly Interested
+"We’ve already implemented a similar solution.",Disinterested
+"I think we’re already covered in this area.",Disinterested
+"I think this is worth considering. Let’s talk soon.",Interested
+"I'm not interested in this product, but thank you.",Disinterested
+"I’m not convinced it’s the right time for us.",Neutral
+"This doesn’t seem like the right fit for our business.",Disinterested
+"I'm really interested. Can you send me a demo?",Highly Interested
+"We’ll pass for now, but thanks for reaching out.",Disinterested
+"Let me consult with my team and get back to you.",Neutral
+"This isn’t something we need right now.",Disinterested
+"Can you send more details before I make a decision?",Interested
+"I need some time to think about this.",Neutral
+"I’m not sure this is the solution for us.",Disinterested
+"This is something we could use. Can you send a proposal?",Interested
+"This is intriguing. Let’s schedule a follow-up.",Interested
+"We’re not interested, but thank you for the offer.",Disinterested
+"We’re ready to move forward, what’s the next step?",Highly Interested
+"I’ll need more time to review this.",Neutral
+"This is a bit outside our budget at the moment.",Disinterested
+"I think this could be a great fit for us.",Highly Interested
+"I’m interested, but need to get more info before moving forward.",Interested
+"This is too much for us right now.",Disinterested
+"We’re already working with someone on this, but thanks.",Disinterested
+"Let me get back to you once I’ve spoken to my team.",Neutral
+"This isn’t the right solution for us.",Disinterested
+"I’m not interested at all. Please stop contacting me.",Highly Disinterested
+"This sounds like what we need! How do we proceed?",Highly Interested
+"We’re interested, but I need to review the details first.",Interested
+"Not a good fit for us at this time.",Disinterested
+"We’re ready to proceed, what’s the next step?",Highly Interested
+"I’m not sure if this fits our needs, but I’m open to hearing more.",Neutral
+"We’re not ready to make a change yet.",Disinterested
+"Thanks, but we’re not interested in pursuing this.",Disinterested
+"This could be useful. Let’s set up a meeting.",Interested
+"Let me discuss with my team and I’ll get back to you.",Neutral
+"We’re already using a similar service.",Disinterested
+"Thanks, but we’re going to pass on this one.",Disinterested
+"This is interesting, but not a priority right now.",Disinterested

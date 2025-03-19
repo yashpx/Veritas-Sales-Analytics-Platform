@@ -1,0 +1,36 @@
+{
+  "transcript": [
+    {
+      "speaker": "Caller",
+      "text": "Hello, I'm calling about my recent order. I haven't received it yet."
+    },
+    {
+      "speaker": "Agent",
+      "text": "I understand your concern. Can you provide your order number?"
+    },
+    {
+      "speaker": "Caller",
+      "text": "Yes, it's ABC123456."
+    },
+    {
+      "speaker": "Agent",
+      "text": "Thank you. Let me check that for you. I can see your order was shipped yesterday and should arrive by tomorrow."
+    },
+    {
+      "speaker": "Caller",
+      "text": "That's great news. Thank you for checking."
+    },
+    {
+      "speaker": "Agent",
+      "text": "Is there anything else I can help you with today?"
+    },
+    {
+      "speaker": "Caller",
+      "text": "No, that's all. Thank you for your help."
+    },
+    {
+      "speaker": "Agent",
+      "text": "You're welcome. Have a great day!"
+    }
+  ]
+}

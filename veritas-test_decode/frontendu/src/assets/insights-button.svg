@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="160" height="48" viewBox="0 0 160 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="160" height="48" rx="24" fill="#8A2BE2"/>
+  <path d="M36 14L38 20L44 21L40 25L41 31L36 28L31 31L32 25L28 21L34 20L36 14Z" fill="white"/>
+  <path d="M46 18L47 21L50 22L47 23L46 26L45 23L42 22L45 21L46 18Z" fill="white"/>
+  <text x="96" y="30" font-family="Arial, sans-serif" font-size="18" font-weight="500" fill="white" text-anchor="middle">Insights</text>
+</svg>

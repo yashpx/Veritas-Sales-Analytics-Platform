@@ -3,12 +3,14 @@ import { Navigate, Link } from 'react-router-dom';
 import { 
   Box, Paper, Typography, Table, TableBody, TableCell, 
   TableContainer, TableHead, TableRow, 
-  TextField, InputAdornment, IconButton, CircularProgress, Alert
+  TextField, InputAdornment, IconButton, CircularProgress, Alert,
+  Tooltip
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
 import MicIcon from '@mui/icons-material/Mic';
 import MicOffIcon from '@mui/icons-material/MicOff';
 import HeadphonesIcon from '@mui/icons-material/Headphones';
+import AssessmentIcon from '@mui/icons-material/Assessment';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
 import { fetchCallLogs } from '../utils/callsService';
@@ -190,11 +192,11 @@ const Calls = () => {
             <TableHead>
               <TableRow>
                 <TableCell width="15%">Date</TableCell>
-                <TableCell width="20%">Client</TableCell>
-                <TableCell width="20%">Sales Rep</TableCell>
-                <TableCell width="15%">Duration</TableCell>
+                <TableCell width="18%">Client</TableCell>
+                <TableCell width="17%">Sales Rep</TableCell>
+                <TableCell width="12%">Duration</TableCell>
                 <TableCell width="15%">Outcome</TableCell>
-                <TableCell width="15%" align="center">Actions</TableCell>
+                <TableCell width="23%" align="center">Actions</TableCell>
               </TableRow>
             </TableHead>
             <TableBody>
@@ -227,31 +229,56 @@ const Calls = () => {
                       </span>
                     </TableCell>
                     <TableCell align="center">
-                      <Box sx={{ display: 'flex', justifyContent: 'center' }}>
-                        <IconButton 
-                          size="small" 
-                          aria-label="transcribe" 
-                          title={call.hasTranscription ? "View Transcription" : "Create New Transcription"}
-                          component={Link}
-                          to="/dashboard/call-transcription"
-                          state={{ callData: call }}
-                          sx={{ 
-                            color: call.hasTranscription ? '#4CAF50' : '#9E9E9E',
-                            bgcolor: call.hasTranscription ? 'rgba(76, 175, 80, 0.1)' : 'transparent',
-                            '&:hover': { 
-                              color: call.hasTranscription ? '#2E7D32' : '#4A90E2',
-                              bgcolor: call.hasTranscription ? 'rgba(76, 175, 80, 0.2)' : 'rgba(74, 144, 226, 0.1)'
-                            },
-                            borderRadius: '50%',
-                            padding: 1
-                          }}
-                        >
-                          {call.hasTranscription ? (
-                            <HeadphonesIcon fontSize="small" />
-                          ) : (
-                            <MicOffIcon fontSize="small" />
-                          )}
-                        </IconButton>
+                      <Box sx={{ display: 'flex', justifyContent: 'center', gap: 1 }}>
+                        <Tooltip title={call.hasTranscription ? "View Transcription" : "Create New Transcription"}>
+                          <IconButton 
+                            size="small" 
+                            aria-label="transcribe" 
+                            component={Link}
+                            to="/dashboard/call-transcription"
+                            state={{ callData: call }}
+                            sx={{ 
+                              color: call.hasTranscription ? '#4CAF50' : '#9E9E9E',
+                              bgcolor: call.hasTranscription ? 'rgba(76, 175, 80, 0.1)' : 'transparent',
+                              '&:hover': { 
+                                color: call.hasTranscription ? '#2E7D32' : '#4A90E2',
+                                bgcolor: call.hasTranscription ? 'rgba(76, 175, 80, 0.2)' : 'rgba(74, 144, 226, 0.1)'
+                              },
+                              borderRadius: '50%',
+                              padding: 1
+                            }}
+                          >
+                            {call.hasTranscription ? (
+                              <HeadphonesIcon fontSize="small" />
+                            ) : (
+                              <MicOffIcon fontSize="small" />
+                            )}
+                          </IconButton>
+                        </Tooltip>
+                        
+                        {call.hasTranscription && (
+                          <Tooltip title="View Call Insights">
+                            <IconButton 
+                              size="small" 
+                              aria-label="insights" 
+                              component={Link}
+                              to="/dashboard/call-insights"
+                              state={{ callData: call }}
+                              sx={{ 
+                                color: '#8a2be2',
+                                bgcolor: 'rgba(138, 43, 226, 0.1)',
+                                '&:hover': { 
+                                  color: '#7a1cb1',
+                                  bgcolor: 'rgba(138, 43, 226, 0.2)'
+                                },
+                                borderRadius: '50%',
+                                padding: 1
+                              }}
+                            >
+                              <AssessmentIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
                       </Box>
                     </TableCell>
                   </TableRow>

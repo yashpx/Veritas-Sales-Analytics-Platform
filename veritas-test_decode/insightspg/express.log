@@ -1,0 +1,23 @@
+Server is running on http://localhost:5001
+Using specific call log ID: 76569
+Using transcript file: /Users/mcg/Desktop/cursor/veritas/transcription_25.json
+Python script output length: 16038
+Error parsing JSON: SyntaxError: Unexpected token 'T', "Trying to "... is not valid JSON
+    at JSON.parse (<anonymous>)
+    at /Users/mcg/Desktop/cursor/veritas/insightspg/server.js:51:27
+    at ChildProcess.exithandler (node:child_process:407:7)
+    at ChildProcess.emit (node:events:507:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:305:5)
+Using hardcoded response
+Using specific call log ID: 76569
+Using transcript file: /Users/mcg/Desktop/cursor/veritas/transcription_25.json
+Python script output length: 16599
+Error parsing JSON: SyntaxError: Unexpected token 'T', "Trying to "... is not valid JSON
+    at JSON.parse (<anonymous>)
+    at /Users/mcg/Desktop/cursor/veritas/insightspg/server.js:51:27
+    at ChildProcess.exithandler (node:child_process:407:7)
+    at ChildProcess.emit (node:events:507:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:305:5)
+Using hardcoded response
