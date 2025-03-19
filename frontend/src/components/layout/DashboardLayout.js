@@ -10,6 +10,7 @@ import DialpadIcon from '@mui/icons-material/Dialpad';
 import NotificationsIcon from '@mui/icons-material/Notifications';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
+import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
 import { useAuth } from '../../context/AuthContext';
 
 const DashboardLayout = ({ children }) => {
@@ -48,6 +49,7 @@ const DashboardLayout = ({ children }) => {
     const baseItems = [
       { text: 'Dashboard', icon: <DashboardIcon />, path: isSalesRep ? '/dashboard/sales-rep' : '/dashboard' },
       { text: 'Analytics', icon: <AnalyticsIcon />, path: isSalesRep ? '/dashboard/sales-rep-analytics' : '/dashboard/analytics' },
+      { text: 'Products', icon: <ShoppingCartIcon />, path: '/dashboard/products' },
       { text: 'Call Logs', icon: <PhoneIcon />, path: '/dashboard/calls' },
       { text: 'Dial Pad', icon: <DialpadIcon />, path: '/dashboard/dialpad' },
     ];

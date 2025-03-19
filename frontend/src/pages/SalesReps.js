@@ -14,7 +14,9 @@ import {
   UserCheck,
   BarChart2,
   Edit,
-  Trash2
+  Trash2,
+  Save,
+  XCircle
 } from 'lucide-react';
 import supabase from '../utils/supabaseClient';
 import RegisterSalesRepForm from '../components/auth/RegisterSalesRepForm';
@@ -29,6 +31,13 @@ const SalesReps = () => {
   const [selectedRep, setSelectedRep] = useState(null);
   const [showSidebar, setShowSidebar] = useState(false);
   const [isAddingRep, setIsAddingRep] = useState(false);
+  const [isEditingRep, setIsEditingRep] = useState(false);
+  const [editingRep, setEditingRep] = useState({
+    sales_rep_first_name: '',
+    sales_rep_last_name: '',
+    'Phone Number': '',
+    'Email': ''
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -225,10 +234,70 @@ const SalesReps = () => {
     return repTotalClients[repId] || 0;
   };
   
+  // Handle editing a sales rep
+  const handleEditRep = () => {
+    setEditingRep({...selectedRep});
+    setIsEditingRep(true);
+  };
+
+  // Handle cancelling edit
+  const handleCancelEdit = () => {
+    setIsEditingRep(false);
+  };
+  
+  // Update a sales rep
+  const updateSalesRep = async () => {
+    try {
+      // Validate form
+      if (!editingRep.sales_rep_first_name || !editingRep.sales_rep_last_name || !editingRep['Email']) {
+        alert('Please fill in all required fields');
+        return;
+      }
+
+      // Validate email format
+      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+      if (!emailRegex.test(editingRep['Email'])) {
+        alert('Please enter a valid email address');
+        return;
+      }
+
+      // Validate phone format if provided
+      if (editingRep['Phone Number'] && !/^\d+$/.test(editingRep['Phone Number'])) {
+        alert('Phone number should contain only digits');
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('sales_reps')
+        .update({
+          sales_rep_first_name: editingRep.sales_rep_first_name,
+          sales_rep_last_name: editingRep.sales_rep_last_name,
+          'Phone Number': editingRep['Phone Number'] ? parseInt(editingRep['Phone Number']) : null,
+          'Email': editingRep['Email']
+        })
+        .eq('sales_rep_id', editingRep.sales_rep_id)
+        .select();
+
+      if (error) {
+        throw error;
+      }
+
+      // Update the selected rep with the new data
+      setSelectedRep(data[0]);
+      setIsEditingRep(false);
+      fetchSalesReps();
+      showSuccessMessage('Sales representative updated successfully!');
+    } catch (error) {
+      console.error('Error updating sales rep:', error);
+      alert(`Failed to update sales representative: ${error.message}`);
+    }
+  };
+
   // Handle close sidebar
   const handleCloseSidebar = () => {
     setShowSidebar(false);
     setSelectedRep(null);
+    setIsEditingRep(false);
   };
   
   // Make table row clickable to view rep details
@@ -304,6 +373,13 @@ const SalesReps = () => {
                       </td>
                       <td className="email-cell">{rep['Email']}</td>
                       <td className="phone-cell">{formatPhone(rep['Phone Number'])}</td>
+                      <td className="stats-cell">
+                        <div>
+                          <strong>{formatCurrency(repTotalSales[rep.sales_rep_id] || 0)}</strong>
+                          <span> • </span>
+                          <span>{getClientCount(rep.sales_rep_id)} clients</span>
+                        </div>
+                      </td>
                       <td>
                         <button 
                           className="view-btn" 
@@ -343,17 +419,17 @@ const SalesReps = () => {
           </div>
         )}
 
-        {/* Sales Rep Detail Sidebar */}
+        {/* Rep Detail Sidebar */}
         <div className={`rep-detail-sidebar ${showSidebar ? 'show' : ''}`}>
+          <div className="sidebar-header">
+            <h3 className="sidebar-title">Sales Rep Details</h3>
+            <button className="close-sidebar" onClick={handleCloseSidebar}>
+              <X size={18} />
+            </button>
+          </div>
+          
           {selectedRep && (
             <>
-              <div className="sidebar-header">
-                <h3 className="sidebar-title">Rep Details</h3>
-                <button className="close-sidebar" onClick={handleCloseSidebar}>
-                  <X size={20} />
-                </button>
-              </div>
-              
               <div className="rep-profile">
                 <div 
                   className="rep-avatar"
@@ -364,116 +440,137 @@ const SalesReps = () => {
                   {selectedRep.sales_rep_first_name?.charAt(0) || ''}
                   {selectedRep.sales_rep_last_name?.charAt(0) || ''}
                 </div>
-                <h2 className="rep-name">{`${selectedRep.sales_rep_first_name || ''} ${selectedRep.sales_rep_last_name || ''}`}</h2>
+                <h2 className="rep-name">
+                  {isEditingRep ? (
+                    <div className="edit-name-fields">
+                      <input 
+                        type="text" 
+                        value={editingRep.sales_rep_first_name} 
+                        onChange={(e) => setEditingRep({...editingRep, sales_rep_first_name: e.target.value})}
+                        placeholder="First Name"
+                      />
+                      <input 
+                        type="text" 
+                        value={editingRep.sales_rep_last_name} 
+                        onChange={(e) => setEditingRep({...editingRep, sales_rep_last_name: e.target.value})}
+                        placeholder="Last Name"
+                      />
+                    </div>
+                  ) : (
+                    <>
+                      {selectedRep.sales_rep_first_name} {selectedRep.sales_rep_last_name}
+                    </>
+                  )}
+                </h2>
                 <p className="rep-title">Sales Representative</p>
                 
                 <div className="rep-stats">
                   <div className="stat-item">
-                    <div className="stat-value">{getClientCount(selectedRep.sales_rep_id)}</div>
-                    <div className="stat-label">Clients</div>
+                    <span className="stat-value">{formatCurrency(repTotalSales[selectedRep.sales_rep_id] || 0)}</span>
+                    <span className="stat-label">Total Sales</span>
                   </div>
                   <div className="stat-item">
-                    <div className="stat-value">{formatCurrency(repTotalSales[selectedRep.sales_rep_id] || 0)}</div>
-                    <div className="stat-label">Total Sales</div>
+                    <span className="stat-value">{getClientCount(selectedRep.sales_rep_id)}</span>
+                    <span className="stat-label">Clients</span>
                   </div>
                 </div>
               </div>
-              
+
               <div className="rep-details">
-                <div className="detail-section">
-                  <h4 className="section-title">
-                    <User size={16} />
-                    Contact Information
-                  </h4>
-                  <ul className="detail-list">
-                    <li className="detail-item">
-                      <Mail className="detail-icon" size={16} />
-                      <div className="detail-content">
-                        <div className="detail-label">Email</div>
-                        <div className="detail-value">{selectedRep['Email'] || 'Not provided'}</div>
-                      </div>
-                    </li>
-                    <li className="detail-item">
-                      <Phone className="detail-icon" size={16} />
-                      <div className="detail-content">
-                        <div className="detail-label">Phone</div>
-                        <div className="detail-value">{formatPhone(selectedRep['Phone Number'])}</div>
-                      </div>
-                    </li>
-                  </ul>
-                </div>
-                
-                <div className="detail-section">
-                  <h4 className="section-title">
-                    <BarChart2 size={16} />
-                    Performance Metrics
-                  </h4>
-                  
-                  <div className="performance-card">
-                    <h5 className="performance-title">Sales Overview</h5>
-                    <div className="performance-stat">
-                      <div className="performance-label">Total Sales</div>
-                      <div className="performance-value">{formatCurrency(repTotalSales[selectedRep.sales_rep_id] || 0)}</div>
+                {isEditingRep ? (
+                  <div className="edit-details-form">
+                    <div className="form-group">
+                      <label>Email</label>
+                      <input 
+                        type="email" 
+                        value={editingRep['Email']} 
+                        onChange={(e) => setEditingRep({...editingRep, 'Email': e.target.value})}
+                        placeholder="Email address"
+                      />
                     </div>
-                    <div className="performance-stat">
-                      <div className="performance-label">Clients</div>
-                      <div className="performance-value">{getClientCount(selectedRep.sales_rep_id)}</div>
+                    <div className="form-group">
+                      <label>Phone Number</label>
+                      <input 
+                        type="tel" 
+                        value={editingRep['Phone Number']} 
+                        onChange={(e) => setEditingRep({...editingRep, 'Phone Number': e.target.value})}
+                        placeholder="Phone number"
+                      />
                     </div>
-                    <div className="performance-stat">
-                      <div className="performance-label">Avg. Sale Value</div>
-                      <div className="performance-value">
-                        {getClientCount(selectedRep.sales_rep_id) > 0 
-                          ? formatCurrency((repTotalSales[selectedRep.sales_rep_id] || 0) / getClientCount(selectedRep.sales_rep_id)) 
-                          : '$0'}
-                      </div>
+                    <div className="form-actions">
+                      <button className="save-btn" onClick={updateSalesRep}>
+                        <Save size={16} /> Save Changes
+                      </button>
+                      <button className="cancel-btn" onClick={handleCancelEdit}>
+                        <XCircle size={16} /> Cancel
+                      </button>
                     </div>
                   </div>
-                </div>
-                
-                <div className="detail-section">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '12px' }}>
-                    <button 
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        backgroundColor: '#f0f2f5',
-                        border: '1px solid #e1e4e8',
-                        borderRadius: '6px',
-                        padding: '8px 12px',
-                        fontSize: '14px',
-                        cursor: 'pointer',
-                        color: '#555',
-                        transition: 'all 0.2s',
-                      }}
-                    >
-                      <Edit size={14} />
-                      Edit Details
-                    </button>
-                    <button 
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        backgroundColor: '#fee2e2',
-                        border: '1px solid #fecaca',
-                        borderRadius: '6px',
-                        padding: '8px 12px',
-                        fontSize: '14px',
-                        cursor: 'pointer',
-                        color: '#b91c1c',
-                        transition: 'all 0.2s',
-                      }}
-                      onClick={() => {
-                        deleteSalesRep(selectedRep.sales_rep_id);
-                        handleCloseSidebar();
-                      }}
-                    >
-                      <Trash2 size={14} />
-                      Delete Rep
-                    </button>
-                  </div>
-                </div>
+                ) : (
+                  <>
+                    <div className="detail-section">
+                      <h4 className="section-title">
+                        <User size={16} /> Contact Information
+                      </h4>
+                      <ul className="detail-list">
+                        <li className="detail-item">
+                          <span className="detail-icon">
+                            <Mail size={16} />
+                          </span>
+                          <div className="detail-content">
+                            <span className="detail-label">Email</span>
+                            <span className="detail-value">{selectedRep['Email'] || 'N/A'}</span>
+                          </div>
+                        </li>
+                        <li className="detail-item">
+                          <span className="detail-icon">
+                            <Phone size={16} />
+                          </span>
+                          <div className="detail-content">
+                            <span className="detail-label">Phone</span>
+                            <span className="detail-value">{formatPhone(selectedRep['Phone Number'])}</span>
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+
+                    <div className="detail-section">
+                      <h4 className="section-title">
+                        <BarChart2 size={16} /> Performance
+                      </h4>
+                      <div className="performance-card">
+                        <div className="performance-stat">
+                          <span className="performance-label">Total Sales</span>
+                          <span className="performance-value">{formatCurrency(repTotalSales[selectedRep.sales_rep_id] || 0)}</span>
+                        </div>
+                        <div className="performance-stat">
+                          <span className="performance-label">Clients</span>
+                          <span className="performance-value">{getClientCount(selectedRep.sales_rep_id)}</span>
+                        </div>
+                        <div className="performance-stat">
+                          <span className="performance-label">Avg. Sale Value</span>
+                          <span className="performance-value">
+                            {getClientCount(selectedRep.sales_rep_id) > 0 
+                              ? formatCurrency((repTotalSales[selectedRep.sales_rep_id] || 0) / getClientCount(selectedRep.sales_rep_id)) 
+                              : '$0'}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="detail-actions">
+                      <button className="action-btn edit-btn" onClick={handleEditRep}>
+                        <Edit size={16} /> Edit
+                      </button>
+                      <button 
+                        className="action-btn delete-btn" 
+                        onClick={() => deleteSalesRep(selectedRep.sales_rep_id)}
+                      >
+                        <Trash2 size={16} /> Delete
+                      </button>
+                    </div>
+                  </>
+                )}
               </div>
             </>
           )}

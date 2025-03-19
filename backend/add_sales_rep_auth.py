@@ -23,7 +23,7 @@ def main():
         sales_rep_id = int(sys.argv[1])
     else:
         # Default to ID 1 if not provided
-        sales_rep_id = 2
+        sales_rep_id = 6
     
     # Default password to use for the sales rep
     password = "password123"

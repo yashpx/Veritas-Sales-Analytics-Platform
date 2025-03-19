@@ -12,6 +12,7 @@ import './styles/global.css';
 
 // Import the Analytics component from the kpi-dashboard
 const Analytics = React.lazy(() => import('./pages/Analytics'));
+const Products = React.lazy(() => import('./pages/Products'));
 const Customers = React.lazy(() => import('./pages/Customers'));
 const SalesReps = React.lazy(() => import('./pages/SalesReps'));
 const Calls = React.lazy(() => import('./pages/Calls'));
@@ -136,6 +137,14 @@ function App() {
             />
             
             {/* Common routes for both user types */}
+            <Route 
+              path="/dashboard/products" 
+              element={
+                <React.Suspense fallback={<LoadingFallback />}>
+                  <Products />
+                </React.Suspense>
+              } 
+            />
             <Route 
               path="/dashboard/calls" 
               element={
