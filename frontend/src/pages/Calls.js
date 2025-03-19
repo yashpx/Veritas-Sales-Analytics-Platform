@@ -15,12 +15,22 @@ import { fetchCallLogs } from '../utils/callsService';
 import '../styles/dashboard.css';
 
 const Calls = () => {
-  const { user } = useAuth();
+  const { user, authType } = useAuth();
   const [calls, setCalls] = useState([]);
   const [filteredCalls, setFilteredCalls] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  
+  // Log user info for debugging
+  useEffect(() => {
+    console.log('Current user in Calls component:', { 
+      user, 
+      authType, 
+      salesRepId: user?.salesRepId,
+      isFilteringEnabled: authType === 'sales_rep' && user?.salesRepId
+    });
+  }, [user, authType]);
 
   useEffect(() => {
     // Try direct Supabase query as a fallback if the service approach fails
@@ -28,12 +38,50 @@ const Calls = () => {
       try {
         setLoading(true);
         setError(null);
+        
+        // Attempt to find sales rep ID if it's missing but we know user is a sales rep
+        let currentUser = user;
+        if (authType === 'sales_rep' && user && !user.salesRepId && user.email) {
+          console.log('Sales rep ID missing, attempting to fetch from sales_reps table');
+          
+          try {
+            // Use temporary direct import of supabase client
+            const supabase = (await import('../utils/supabaseClient')).default;
+            
+            // Try to find the sales_rep_id using the email
+            const { data, error } = await supabase
+              .from('sales_reps')
+              .select('sales_rep_id, Email')
+              .ilike('Email', user.email)
+              .single();
+              
+            if (data && !error) {
+              console.log('Found sales_rep_id:', data.sales_rep_id);
+              // Update in-memory user object
+              currentUser = { ...user, salesRepId: data.sales_rep_id };
+              
+              // Also update localStorage to fix for future loads
+              const storedUser = JSON.parse(localStorage.getItem('sales_rep_user'));
+              if (storedUser) {
+                storedUser.salesRepId = data.sales_rep_id;
+                localStorage.setItem('sales_rep_user', JSON.stringify(storedUser));
+                console.log('Updated sales rep ID in localStorage');
+              }
+            } else {
+              console.warn('Could not find sales_rep_id for user:', user.email);
+            }
+          } catch (e) {
+            console.error('Error fetching sales_rep_id:', e);
+          }
+        }
 
-        console.log('Attempting to fetch call logs via callsService...');
+        console.log('Attempting to fetch call logs via callsService...', { 
+          sales_rep_id: currentUser?.salesRepId
+        });
         
         try {
-          // First try using the service
-          const data = await fetchCallLogs();
+          // First try using the service, passing currentUser and authType
+          const data = await fetchCallLogs(currentUser, authType);
           
           console.log('Call logs fetched via service:', data);
           
@@ -65,7 +113,7 @@ const Calls = () => {
         const supabase = (await import('../utils/supabaseClient')).default;
         
         // Using the same table joins as in your SQL query
-        let { data: call_logs, error } = await supabase
+        let query = supabase
           .from('call_logs')
           .select(`
             call_id,
@@ -77,6 +125,16 @@ const Calls = () => {
             customers!inner(customer_id, customer_first_name, customer_last_name),
             sales_reps!inner(sales_rep_id, sales_rep_first_name, sales_rep_last_name)
           `);
+          
+        // If user is a sales rep, filter calls for just that rep
+        if (authType === 'sales_rep' && currentUser && currentUser.salesRepId) {
+          console.log('Filtering direct query for sales rep ID:', currentUser.salesRepId);
+          // Direct filter on sales_rep_id column in call_logs table
+          query = query.eq('sales_rep_id', currentUser.salesRepId);
+        }
+        
+        // Execute the query
+        let { data: call_logs, error } = await query;
         
         if (error) {
           throw new Error(`Supabase query error: ${error.message}`);
@@ -120,7 +178,7 @@ const Calls = () => {
     if (user) {
       loadCallLogs();
     }
-  }, [user]);
+  }, [user, authType]);
 
   useEffect(() => {
     if (searchQuery) {
@@ -150,9 +208,16 @@ const Calls = () => {
     <DashboardLayout>
       <Box sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-          <Typography variant="h4" fontWeight="bold" sx={{ color: 'var(--heading-color)' }}>
-            Call Logs
-          </Typography>
+          <Box>
+            <Typography variant="h4" fontWeight="bold" sx={{ color: 'var(--heading-color)' }}>
+              Call Logs
+            </Typography>
+            {authType === 'sales_rep' && (
+              <Typography variant="subtitle1" sx={{ color: 'var(--text-secondary)', mt: 0.5 }}>
+                Showing your assigned calls only
+              </Typography>
+            )}
+          </Box>
           {/* Action buttons removed as per request */}
         </Box>
 

@@ -1,15 +1,17 @@
 import supabase from './supabaseClient';
 
 /**
- * Fetch all call logs with related data (sales rep and customer)
+ * Fetch call logs with related data (sales rep and customer)
+ * If user is a sales rep, only returns their own calls
+ * @param {object} user - Current user object from auth context
+ * @param {string} authType - Auth type ('supabase' or 'sales_rep')
  * @returns {Promise} - Promise with call logs data
  */
-export const fetchCallLogs = async () => {
+export const fetchCallLogs = async (user, authType) => {
   try {
-    console.log('Fetching call logs...');
+    console.log('Fetching call logs...', { user, authType });
     
-    // Using the table relationships as specified in your SQL query
-    let { data: call_logs, error } = await supabase
+    let query = supabase
       .from('call_logs')
       .select(`
         call_id,
@@ -21,6 +23,16 @@ export const fetchCallLogs = async () => {
         customers!inner(customer_id, customer_first_name, customer_last_name),
         sales_reps!inner(sales_rep_id, sales_rep_first_name, sales_rep_last_name)
       `);
+    
+    // If user is a sales rep, filter calls for just that rep
+    if (authType === 'sales_rep' && user && user.salesRepId) {
+      console.log('Filtering calls for sales rep ID:', user.salesRepId);
+      // Direct filter on sales_rep_id column in call_logs table
+      query = query.eq('sales_rep_id', user.salesRepId);
+    }
+    
+    // Execute the query
+    let { data: call_logs, error } = await query;
     
     console.log('Call logs query result:', { 
       success: !error, 

@@ -114,6 +114,8 @@ export function AuthProvider({ children }) {
       // try to find the corresponding sales_rep_id
       let enhancedUserData = { ...user_data };
       
+      console.log("Raw user_data from login:", user_data);
+      
       if (!enhancedUserData.salesRepId && enhancedUserData.id && enhancedUserData.role === 'sales_rep' && email) {
         try {
           console.log("Attempting to find sales_rep_id for:", email);
@@ -123,10 +125,35 @@ export function AuthProvider({ children }) {
             .select('sales_rep_id')
             .eq('Email', email)
             .single();
+          
+          console.log("Supabase query result:", { data, error });
             
           if (data && !error) {
             console.log("Found sales_rep_id:", data.sales_rep_id);
             enhancedUserData.salesRepId = data.sales_rep_id;
+          } else {
+            console.warn("No sales_rep_id found for email:", email);
+            console.warn("Will try case-insensitive search as fallback");
+            
+            // Try case-insensitive search as fallback
+            const { data: allReps, error: listError } = await supabase
+              .from('sales_reps')
+              .select('sales_rep_id, Email');
+              
+            if (!listError && allReps) {
+              // Case-insensitive manual matching
+              const emailLower = email.toLowerCase();
+              const matchingRep = allReps.find(rep => 
+                rep.Email && rep.Email.toLowerCase() === emailLower
+              );
+              
+              if (matchingRep) {
+                console.log("Found sales_rep_id through case-insensitive match:", matchingRep.sales_rep_id);
+                enhancedUserData.salesRepId = matchingRep.sales_rep_id;
+              } else {
+                console.error("No matching sales_rep found in the database");
+              }
+            }
           }
         } catch (e) {
           console.error("Error fetching sales_rep_id during login:", e);
