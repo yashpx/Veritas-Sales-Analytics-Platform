@@ -29,13 +29,15 @@ const LoginForm = () => {
         // Manager login uses Supabase auth
         const { error } = await signIn(email, password);
         if (error) throw error;
+        // Manager will be routed to the appropriate dashboard by the DashboardRouter
+        navigate('/dashboard');
       } else {
         // Sales rep login uses custom auth
         const { error } = await signInSalesRep(email, password);
         if (error) throw error;
+        // Redirect directly to the sales rep dashboard
+        navigate('/dashboard/sales-rep');
       }
-      
-      navigate('/dashboard');
     } catch (error) {
       setError(error.message || 'Failed to sign in');
       console.error('Login error:', error);

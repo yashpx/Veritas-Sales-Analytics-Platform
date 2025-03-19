@@ -37,9 +37,19 @@ export function AuthProvider({ children }) {
         const salesRepUser = JSON.parse(localStorage.getItem('sales_rep_user'));
         
         if (salesRepToken && salesRepUser) {
+          // Make sure salesRepId is available in the user object
+          // If salesRepId is missing but we know this is a sales rep,
+          // we need to fetch the correct sales_rep_id from the database
+          if (!salesRepUser.salesRepId && salesRepUser.id && salesRepUser.role === 'sales_rep') {
+            console.warn('sales_rep_user missing salesRepId, need to query from sales_reps table');
+            // We will query this in the component that needs it, as we need to use async/await
+            // We'll just log a warning here
+          }
+          
           setUser(salesRepUser);
           setSession({ access_token: salesRepToken });
           setAuthType('sales_rep');
+          console.log('Restored sales rep session with ID:', salesRepUser.salesRepId);
         }
       } catch (error) {
         console.error('Session retrieval error:', error);
@@ -100,16 +110,39 @@ export function AuthProvider({ children }) {
       
       const { access_token, token_type, user_data } = response.data;
       
-      // Store token and user data in localStorage
+      // After login, if we have a user_auth ID but not a sales_rep_id,
+      // try to find the corresponding sales_rep_id
+      let enhancedUserData = { ...user_data };
+      
+      if (!enhancedUserData.salesRepId && enhancedUserData.id && enhancedUserData.role === 'sales_rep' && email) {
+        try {
+          console.log("Attempting to find sales_rep_id for:", email);
+          // Try to find the sales_rep_id using the email
+          const { data, error } = await supabase
+            .from('sales_reps')
+            .select('sales_rep_id')
+            .eq('Email', email)
+            .single();
+            
+          if (data && !error) {
+            console.log("Found sales_rep_id:", data.sales_rep_id);
+            enhancedUserData.salesRepId = data.sales_rep_id;
+          }
+        } catch (e) {
+          console.error("Error fetching sales_rep_id during login:", e);
+        }
+      }
+      
+      // Store token and enhanced user data in localStorage
       localStorage.setItem('sales_rep_token', access_token);
-      localStorage.setItem('sales_rep_user', JSON.stringify(user_data));
+      localStorage.setItem('sales_rep_user', JSON.stringify(enhancedUserData));
       
       // Update state
-      setUser(user_data);
+      setUser(enhancedUserData);
       setSession({ access_token });
       setAuthType('sales_rep');
       
-      return { data: response.data, error: null };
+      return { data: { ...response.data, user_data: enhancedUserData }, error: null };
     } catch (error) {
       console.error('Sales rep login error:', error);
       return { 

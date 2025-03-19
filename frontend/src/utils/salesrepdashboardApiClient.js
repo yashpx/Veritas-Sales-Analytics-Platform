@@ -13,15 +13,19 @@ if (!supabaseAnonKey) {
 }
 
 // Only create client if we have the required configuration
-const dashboardClient = supabaseUrl && supabaseAnonKey 
+const salesRepDashboardClient = supabaseUrl && supabaseAnonKey 
   ? createClient(supabaseUrl, supabaseAnonKey)
   : null;
 
-// Dashboard data fetching functions
-export const fetchDashboardData = async (timeframe = 'weekly') => {
-  // Validate client before proceeding
-  if (!dashboardClient) {
+// Sales Rep Dashboard data fetching functions
+export const fetchSalesRepDashboardData = async (salesRepId, timeframe = 'weekly') => {
+  // Validate client and salesRepId before proceeding
+  if (!salesRepDashboardClient) {
     throw new Error('Supabase client not initialized. Check environment variables.');
+  }
+
+  if (!salesRepId) {
+    throw new Error('Sales Rep ID is required.');
   }
 
   try {
@@ -38,125 +42,168 @@ export const fetchDashboardData = async (timeframe = 'weekly') => {
     const currentMonthStart = new Date(currentYear, currentMonth, 1);
     const currentMonthEnd = new Date(currentYear, currentMonth + 1, 0);
     
-    // Previous month for comparison
-    const previousMonth = currentMonth === 0 ? 11 : currentMonth - 1;
-    const previousMonthYear = currentMonth === 0 ? currentYear - 1 : currentYear;
-    const previousMonthStart = new Date(previousMonthYear, previousMonth, 1);
-    const previousMonthEnd = new Date(previousMonthYear, previousMonth + 1, 0);
-    
     // Set the appropriate start and end dates based on timeframe
     const startDate = timeframe === 'weekly' ? startOfWeek : currentMonthStart;
     const endDate = now;
     
     // Use Promise.all to run queries in parallel for better performance
     const [
+      repInfoResult,
       callDataResult,
       closedSalesResult,
       minutesDataResult,
       pendingSalesResult,
-      salesRepsResult,
+      kpiDataResult,
       recentCallsResult,
       salesResult,
-      currentSentimentResult
+      currentSentimentResult,
+      topCustomersResult,
+      productMixResult
     ] = await Promise.all([
+      // Get rep info
+      salesRepDashboardClient
+        .from('sales_reps')
+        .select('sales_rep_first_name, sales_rep_last_name')
+        .eq('sales_rep_id', salesRepId)
+        .single(),
+      
       // Get total calls for the selected timeframe
-      dashboardClient
+      salesRepDashboardClient
         .from('call_logs')
         .select('call_id')
+        .eq('sales_rep_id', salesRepId)
         .gte('call_date', startDate.toISOString())
         .lt('call_date', endDate.toISOString()),
       
       // Get closed sales for the selected timeframe
-      dashboardClient
+      salesRepDashboardClient
         .from('call_logs')
         .select('call_id')
+        .eq('sales_rep_id', salesRepId)
         .eq('call_outcome', 'Closed')
         .gte('call_date', startDate.toISOString())
         .lt('call_date', endDate.toISOString()),
       
       // Get total call minutes for the selected timeframe
-      dashboardClient
+      salesRepDashboardClient
         .from('call_logs')
         .select('duration_minutes')
+        .eq('sales_rep_id', salesRepId)
         .gte('call_date', startDate.toISOString())
         .lt('call_date', endDate.toISOString()),
       
       // Get pending sales for the selected timeframe
-      dashboardClient
+      salesRepDashboardClient
         .from('call_logs')
         .select('call_id')
+        .eq('sales_rep_id', salesRepId)
         .eq('call_outcome', 'In-progress')
         .gte('call_date', startDate.toISOString())
         .lt('call_date', endDate.toISOString()),
         
-      // Get top sales reps for the selected timeframe
-      dashboardClient
-        .from('sales_data')
-        .select(`
-          sales_rep_id,
-          sales_rep_first_name,
-          sales_rep_last_name,
-          sale_amount,
-          sale_date
-        `)
-        .gte('sale_date', startDate.toISOString())
-        .lte('sale_date', endDate.toISOString())
-        .order('sale_date', { ascending: false }),
+      // Get KPI data for the rep
+      salesRepDashboardClient
+        .from('sales_kpi')
+        .select('*')
+        .eq('sales_rep_id', salesRepId)
+        .gte('month', timeframe === 'weekly' 
+          ? new Date(currentYear, currentMonth, 1).toISOString().split('T')[0] 
+          : new Date(currentYear, currentMonth, 1).toISOString().split('T')[0])
+        .lte('month', new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0])
+        .single(),
       
-      // Get recent calls (always latest 5 regardless of timeframe)
-      dashboardClient
+      // Get recent calls (5 most recent)
+      salesRepDashboardClient
         .from('call_logs')
         .select(`
           call_id,
           call_date,
           duration_minutes,
           call_outcome,
-          customers!inner(customer_first_name, customer_last_name),
-          sales_reps!inner(sales_rep_first_name, sales_rep_last_name)
+          "Sentiment Result",
+          customers!inner(customer_first_name, customer_last_name)
         `)
+        .eq('sales_rep_id', salesRepId)
         .order('call_date', { ascending: false })
         .limit(5),
       
       // Get sales data for the selected timeframe
-      dashboardClient
+      salesRepDashboardClient
         .from('sales_data')
-        .select('sale_amount, sale_date')
+        .select('sale_amount, sale_date, product_name')
+        .eq('sales_rep_id', salesRepId)
         .gte('sale_date', startDate.toISOString())
         .lte('sale_date', endDate.toISOString()),
       
-      // Get current period sentiment data - fetch all sentiment results for the period
-      dashboardClient
+      // Get current period sentiment data for this rep
+      salesRepDashboardClient
         .from('call_logs')
         .select('"Sentiment Result"')
+        .eq('sales_rep_id', salesRepId)
         .gte('call_date', startDate.toISOString())
-        .lte('call_date', endDate.toISOString())
+        .lte('call_date', endDate.toISOString()),
+        
+      // Get top customers by sales amount
+      salesRepDashboardClient
+        .from('sales_data')
+        .select(`
+          customer_id,
+          customer_first_name, 
+          customer_last_name,
+          sale_amount
+        `)
+        .eq('sales_rep_id', salesRepId)
+        .gte('sale_date', startDate.toISOString())
+        .lte('sale_date', endDate.toISOString()),
+        
+      // Get product mix
+      salesRepDashboardClient
+        .from('sales_data')
+        .select(`
+          product_id,
+          product_name,
+          sale_amount,
+          quantity_sold
+        `)
+        .eq('sales_rep_id', salesRepId)
+        .gte('sale_date', startDate.toISOString())
+        .lte('sale_date', endDate.toISOString())
     ]);
     
     // Check for errors in all queries
     const errors = [
+      { name: 'rep info', error: repInfoResult.error },
       { name: 'call data', error: callDataResult.error },
       { name: 'closed sales', error: closedSalesResult.error },
       { name: 'minutes data', error: minutesDataResult.error },
       { name: 'pending sales', error: pendingSalesResult.error },
-      { name: 'sales reps', error: salesRepsResult.error },
+      { name: 'kpi data', error: kpiDataResult.error },
       { name: 'recent calls', error: recentCallsResult.error },
       { name: 'sales data', error: salesResult.error },
-      { name: 'current sentiment', error: currentSentimentResult.error }
+      { name: 'current sentiment', error: currentSentimentResult.error },
+      { name: 'top customers', error: topCustomersResult.error },
+      { name: 'product mix', error: productMixResult.error }
     ].filter(item => item.error);
     
     if (errors.length > 0) {
       throw new Error(`Database query errors: ${errors.map(e => `${e.name}: ${e.error.message}`).join(', ')}`);
     }
     
+    // Process rep info
+    const repInfo = repInfoResult.data || { sales_rep_first_name: '', sales_rep_last_name: '' };
+    const repName = `${repInfo.sales_rep_first_name || ''} ${repInfo.sales_rep_last_name || ''}`.trim();
+    
     // Process data safely with null checks
     const callData = callDataResult.data || [];
     const closedSales = closedSalesResult.data || [];
     const minutesData = minutesDataResult.data || [];
     const pendingSales = pendingSalesResult.data || [];
-    const salesReps = salesRepsResult.data || [];
+    const kpiData = kpiDataResult.data || {};
     const recentCallsData = recentCallsResult.data || [];
     const salesData = salesResult.data || [];
     const currentSentimentData = currentSentimentResult.data || [];
+    const topCustomersData = topCustomersResult.data || [];
+    const productMixData = productMixResult.data || [];
     
     // Calculate total minutes safely
     const totalMinutes = minutesData.reduce((sum, call) => {
@@ -164,38 +211,6 @@ export const fetchDashboardData = async (timeframe = 'weekly') => {
       const minutes = Number(call.duration_minutes) || 0;
       return sum + minutes;
     }, 0);
-    
-    // Process sales rep data for selected timeframe
-    const repTotals = {};
-    
-    salesReps.forEach(sale => {
-      // Skip invalid data
-      if (!sale.sales_rep_id) return;
-      
-      const repId = sale.sales_rep_id;
-      const firstName = sale.sales_rep_first_name || '';
-      const lastName = sale.sales_rep_last_name || '';
-      const fullName = `${firstName} ${lastName}`.trim();
-      const saleAmount = Number(sale.sale_amount) || 0;
-      
-      if (!repTotals[repId]) {
-        repTotals[repId] = {
-          id: repId,
-          name: fullName || `Rep ${repId}`,
-          month: timeframe === 'weekly' ? 'This Week' : getMonthName(currentMonth),
-          deals: 0,
-          totalSales: 0
-        };
-      }
-      
-      repTotals[repId].deals += 1;
-      repTotals[repId].totalSales += saleAmount;
-    });
-    
-    // Convert to array and sort by totalSales from highest to lowest
-    const topReps = Object.values(repTotals)
-      .sort((a, b) => b.totalSales - a.totalSales)
-      .slice(0, 5);
     
     // Process recent calls safely
     const recentCalls = recentCallsData.map(call => {
@@ -209,15 +224,14 @@ export const fetchDashboardData = async (timeframe = 'weekly') => {
       
       const customerFirstName = call.customers?.customer_first_name || '';
       const customerLastName = call.customers?.customer_last_name || '';
-      const repFirstName = call.sales_reps?.sales_rep_first_name || '';
-      const repLastName = call.sales_reps?.sales_rep_last_name || '';
+      const sentiment = call["Sentiment Result"] || 'Neutral';
       
       return {
         date: formattedDate,
         client: `${customerFirstName} ${customerLastName}`.trim() || 'Unknown Client',
-        salesRep: `${repFirstName} ${repLastName}`.trim() || 'Unknown Rep',
         duration: `${call.duration_minutes || 0}m`,
-        outcome: call.call_outcome || 'Unknown'
+        outcome: call.call_outcome || 'Unknown',
+        sentiment: sentiment
       };
     });
     
@@ -269,12 +283,82 @@ export const fetchDashboardData = async (timeframe = 'weekly') => {
       }
     }
     
+    // Process top customers
+    const customerTotals = {};
+    
+    topCustomersData.forEach(sale => {
+      if (!sale.customer_id) return;
+      
+      const customerId = sale.customer_id;
+      const firstName = sale.customer_first_name || '';
+      const lastName = sale.customer_last_name || '';
+      const fullName = `${firstName} ${lastName}`.trim();
+      const saleAmount = Number(sale.sale_amount) || 0;
+      
+      if (!customerTotals[customerId]) {
+        customerTotals[customerId] = {
+          id: customerId,
+          name: fullName || `Customer ${customerId}`,
+          totalSales: 0,
+          deals: 0
+        };
+      }
+      
+      customerTotals[customerId].deals += 1;
+      customerTotals[customerId].totalSales += saleAmount;
+    });
+    
+    // Convert to array and sort by totalSales from highest to lowest
+    const topCustomers = Object.values(customerTotals)
+      .sort((a, b) => b.totalSales - a.totalSales)
+      .slice(0, 5);
+    
+    // Process product mix
+    const productTotals = {};
+    
+    productMixData.forEach(sale => {
+      if (!sale.product_id) return;
+      
+      const productId = sale.product_id;
+      const productName = sale.product_name || `Product ${productId}`;
+      const saleAmount = Number(sale.sale_amount) || 0;
+      const quantity = Number(sale.quantity_sold) || 0;
+      
+      if (!productTotals[productId]) {
+        productTotals[productId] = {
+          id: productId,
+          name: productName,
+          totalSales: 0,
+          quantity: 0
+        };
+      }
+      
+      productTotals[productId].totalSales += saleAmount;
+      productTotals[productId].quantity += quantity;
+    });
+    
+    // Convert to array and sort by totalSales from highest to lowest
+    const productMix = Object.values(productTotals)
+      .sort((a, b) => b.totalSales - a.totalSales);
+    
+    // Calculate KPI progress
+    const kpiTargetSales = kpiData.target_sales_amount || 0;
+    const kpiTargetTransactions = kpiData.target_transactions || 0;
+    
+    const salesProgress = kpiTargetSales > 0 
+      ? Math.min(Math.round((totalSales / kpiTargetSales) * 100), 100) 
+      : 0;
+    
+    const transactionsProgress = kpiTargetTransactions > 0 
+      ? Math.min(Math.round((closedSales.length / kpiTargetTransactions) * 100), 100) 
+      : 0;
+    
     // Generate trend data based on timeframe
-    let trendData = [];
+    let salesTrend = [];
     
     if (timeframe === 'weekly') {
       // Generate data for the last 7 days
-      trendData = Array.from({ length: 7 }, (_, i) => {
+      salesTrend = Array.from({ length: 7 }, (_, i) => {
         const date = new Date();
         date.setDate(date.getDate() - (6 - i)); // Count forwards from 6 days ago to today
         
@@ -289,14 +373,14 @@ export const fetchDashboardData = async (timeframe = 'weekly') => {
         
         return {
           day: dayStr,
-          sales: daySales || Math.floor(Math.random() * 10 + 5) // Fallback to demo data if no real data
+          sales: daySales
         };
       });
     } else {
       // Generate data for the days in the current month
       const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
       
-      trendData = Array.from({ length: daysInMonth }, (_, i) => {
+      salesTrend = Array.from({ length: daysInMonth }, (_, i) => {
         const day = i + 1;
         const date = new Date(currentYear, currentMonth, day);
         
@@ -313,48 +397,72 @@ export const fetchDashboardData = async (timeframe = 'weekly') => {
         
         return {
           day: dayStr,
-          sales: daySales || Math.floor(Math.random() * 10 + 5) // Fallback to demo data if no real data
+          sales: daySales
         };
       }).filter(item => item !== null); // Remove nulls (future days)
     }
     
+    // Calculate daily averages for call analytics
+    const averageDailyCalls = callData.length / (timeframe === 'weekly' ? 7 : daysInMonth(currentMonth, currentYear));
+    const averageCallDuration = callData.length > 0 ? totalMinutes / callData.length : 0;
+    
+    // Put all the data together
     return {
+      repName: repName,
       totalCalls: callData.length,
       salesClosed: closedSales.length,
       callMinutes: totalMinutes,
       salesPending: pendingSales.length,
-      topSalesReps: topReps,
       recentCalls: recentCalls,
       monthlySales: Math.round(totalSales),
       currentMonthName: timeframe === 'weekly' ? 'This Week' : getMonthName(currentMonth),
       callSentiment: sentimentPercentages,
-      sentimentData: {
-        positive: sentimentCounts.positive,
-        negative: sentimentCounts.negative,
-        neutral: sentimentCounts.neutral,
-        total: sentimentCounts.total
+      sentimentData: sentimentCounts,
+      salesTrend: salesTrend,
+      topCustomers: topCustomers,
+      productMix: productMix,
+      kpi: {
+        targetSales: kpiTargetSales,
+        targetTransactions: kpiTargetTransactions,
+        salesProgress: salesProgress,
+        transactionsProgress: transactionsProgress
       },
-      salesTrend: trendData
+      analytics: {
+        averageDailyCalls: averageDailyCalls.toFixed(1),
+        averageCallDuration: averageCallDuration.toFixed(1)
+      }
     };
     
   } catch (error) {
-    console.error('Error fetching dashboard data:', error);
+    console.error('Error fetching sales rep dashboard data:', error);
     
     // Return a structured error that won't crash the UI
     return {
       error: true,
       errorMessage: error.message || 'Unknown error occurred while fetching dashboard data',
+      repName: '',
       totalCalls: 0,
       salesClosed: 0,
       callMinutes: 0,
       salesPending: 0,
-      topSalesReps: [],
       recentCalls: [],
       monthlySales: 0,
       currentMonthName: timeframe === 'weekly' ? 'This Week' : getMonthName(new Date().getMonth()),
       callSentiment: { positive: 0, negative: 0, neutral: 0 },
       sentimentData: { positive: 0, negative: 0, neutral: 0, total: 0 },
-      salesTrend: []
+      salesTrend: [],
+      topCustomers: [],
+      productMix: [],
+      kpi: {
+        targetSales: 0,
+        targetTransactions: 0,
+        salesProgress: 0,
+        transactionsProgress: 0
+      },
+      analytics: {
+        averageDailyCalls: '0',
+        averageCallDuration: '0'
+      }
     };
   }
 };
@@ -365,4 +473,9 @@ const getMonthName = (monthIndex) => {
   return months[monthIndex % 12] || 'Unknown';
 };
 
-export default dashboardClient;
+// Helper function to calculate days in month
+const daysInMonth = (month, year) => {
+  return new Date(year, month + 1, 0).getDate();
+};
+
+export default salesRepDashboardClient;

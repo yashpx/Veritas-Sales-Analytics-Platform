@@ -214,7 +214,7 @@ async def login_sales_rep(login_data: SalesRepLogin):
             role=user_auth.get("Role", "sales_rep")
         )
         
-        # Return token and user info
+        # Return token and user info including the sales_rep_id
         return {
             "access_token": token,
             "token_type": "bearer",
@@ -222,7 +222,8 @@ async def login_sales_rep(login_data: SalesRepLogin):
                 "id": user_auth["id"],
                 "full_name": full_name,
                 "email": user_auth["email"],
-                "role": user_auth.get("Role", "sales_rep")
+                "role": user_auth.get("Role", "sales_rep"),
+                "salesRepId": sales_rep["sales_rep_id"]  # Include the sales rep ID
             }
         }
     except HTTPException:

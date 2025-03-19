@@ -16,7 +16,7 @@ const DashboardLayout = ({ children }) => {
   const [expanded, setExpanded] = useState(false);
   const [hoverTimer, setHoverTimer] = useState(null);
   const location = useLocation();
-  const { user, signOut } = useAuth();
+  const { user, signOut, authType } = useAuth();
 
   const handleMouseEnter = () => {
     const timer = setTimeout(() => {
@@ -39,14 +39,32 @@ const DashboardLayout = ({ children }) => {
     };
   }, [hoverTimer]);
 
-  const navigationItems = [
-    { text: 'Dashboard', icon: <DashboardIcon />, path: '/dashboard' },
-    { text: 'Analytics', icon: <AnalyticsIcon />, path: '/dashboard/analytics' },
-    { text: 'Contacts', icon: <PeopleIcon />, path: '/dashboard/customers' },
-    { text: 'Sales Reps', icon: <PeopleIcon />, path: '/dashboard/sales-reps' },
-    { text: 'Call Logs', icon: <PhoneIcon />, path: '/dashboard/calls' },
-    { text: 'Dial Pad', icon: <DialpadIcon />, path: '/dashboard/dialpad' },
-  ];
+  // Determine if the user is a sales rep
+  const isSalesRep = authType === 'sales_rep';
+
+  // Adjust navigation items based on user role
+  const getNavigationItems = () => {
+    // Base navigation items for all users
+    const baseItems = [
+      { text: 'Dashboard', icon: <DashboardIcon />, path: isSalesRep ? '/dashboard/sales-rep' : '/dashboard' },
+      { text: 'Analytics', icon: <AnalyticsIcon />, path: isSalesRep ? '/dashboard/sales-rep-analytics' : '/dashboard/analytics' },
+      { text: 'Call Logs', icon: <PhoneIcon />, path: '/dashboard/calls' },
+      { text: 'Dial Pad', icon: <DialpadIcon />, path: '/dashboard/dialpad' },
+    ];
+    
+    // Items only for managers
+    if (!isSalesRep) {
+      return [
+        ...baseItems,
+        { text: 'Contacts', icon: <PeopleIcon />, path: '/dashboard/customers' },
+        { text: 'Sales Reps', icon: <PeopleIcon />, path: '/dashboard/sales-reps' },
+      ];
+    }
+    
+    return baseItems;
+  };
+  
+  const navigationItems = getNavigationItems();
 
   const utilityItems = [
     { text: 'Notifications', icon: <NotificationsIcon />, path: '/dashboard/notifications' },

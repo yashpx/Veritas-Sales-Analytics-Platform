@@ -34,9 +34,16 @@ const PrivateRoute = ({ requiredRoles = [] }) => {
     const userRole = userProfile?.role || (authType === 'sales_rep' ? 'sales_rep' : 'manager');
     
     if (!requiredRoles.includes(userRole)) {
-      // Redirect to dashboard or unauthorized page
-      return <Navigate to="/dashboard" replace />;
+      // Redirect to the appropriate dashboard based on role
+      const dashboardPath = userRole === 'sales_rep' ? '/dashboard/sales-rep' : '/dashboard';
+      return <Navigate to={dashboardPath} replace />;
     }
+  }
+  
+  // Check if we need to redirect from a common dashboard path to a role-specific one
+  if (location.pathname === '/dashboard' && authType === 'sales_rep') {
+    console.log('Redirecting sales rep from common dashboard to sales rep dashboard');
+    return <Navigate to="/dashboard/sales-rep" replace />;
   }
   
   // User is authenticated and has required role (if any)

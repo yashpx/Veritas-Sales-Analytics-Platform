@@ -1,0 +1,158 @@
+/* salesrepanalytics.css */
+
+/* KPI Cards */
+.kpi-card {
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  height: 100%;
+}
+
+.kpi-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+}
+
+.kpi-card .icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  margin-right: 16px;
+}
+
+/* Chart Paper */
+.chart-paper {
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+  overflow: hidden;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  height: 100%;
+}
+
+.chart-paper:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
+}
+
+.chart-title {
+  padding: 16px;
+  background-color: #f5f5f5;
+  border-bottom: 1px solid #e0e0e0;
+}
+
+/* Table Styles */
+.hoverable-row:hover {
+  background-color: #f5f5f5;
+  cursor: pointer;
+}
+
+/* Progress Bars */
+.progress-bar {
+  height: 10px;
+  border-radius: 5px;
+  margin-bottom: 20px;
+}
+
+.progress-bar-bg {
+  height: 100%;
+  border-radius: 5px;
+}
+
+/* Responsive Adjustments */
+@media (max-width: 960px) {
+  .kpi-card {
+    margin-bottom: 16px;
+  }
+}
+
+/* Animation for loading state */
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
+.loading-pulse {
+  animation: pulse 1.5s infinite;
+}
+
+/* Tooltips */
+.recharts-tooltip-wrapper {
+  background-color: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+  padding: 10px 14px;
+}
+
+.recharts-default-tooltip {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+  padding: 10px 14px !important;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Chip styling */
+.MuiChip-root {
+  font-weight: 500;
+  font-size: 0.75rem;
+}
+
+/* Add some extra spacing for the dashboard layout */
+.dashboard-content {
+  padding-bottom: 40px;
+}
+
+/* Styling for the radar chart */
+.recharts-radar-polygon {
+  stroke-width: 2;
+}
+
+/* Style for the PieChart labels */
+.recharts-pie-label-text {
+  font-size: 12px;
+  font-weight: 500;
+}
+
+/* Ensure cards have a minimum height */
+.chart-paper {
+  min-height: 350px;
+}
+
+/* Custom Avatar styling */
+.MuiAvatar-root {
+  font-weight: bold;
+  text-transform: uppercase;
+}
