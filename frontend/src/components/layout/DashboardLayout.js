@@ -11,6 +11,8 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import SettingsIcon from '@mui/icons-material/Settings';
 import LogoutIcon from '@mui/icons-material/Logout';
 import ShoppingCartIcon from '@mui/icons-material/ShoppingCart';
+import ContactsIcon from '@mui/icons-material/Contacts';
+import BusinessIcon from '@mui/icons-material/Business';
 import { useAuth } from '../../context/AuthContext';
 
 const DashboardLayout = ({ children }) => {
@@ -58,8 +60,8 @@ const DashboardLayout = ({ children }) => {
     if (!isSalesRep) {
       return [
         ...baseItems,
-        { text: 'Contacts', icon: <PeopleIcon />, path: '/dashboard/customers' },
-        { text: 'Sales Reps', icon: <PeopleIcon />, path: '/dashboard/sales-reps' },
+        { text: 'Contacts', icon: <ContactsIcon />, path: '/dashboard/customers' },
+        { text: 'Sales Reps', icon: <BusinessIcon />, path: '/dashboard/sales-reps' },
       ];
     }
     
@@ -76,23 +78,24 @@ const DashboardLayout = ({ children }) => {
   const listItemStyles = (isActive = false) => ({
     mb: 1,
     borderRadius: 1.5,
-    backgroundColor: isActive ? '#f0f4ff' : 'transparent',
+    backgroundColor: isActive ? 'rgba(255, 255, 255, 0.2)' : 'transparent',
     pl: expanded ? 3 : 'inherit',
     justifyContent: expanded ? 'flex-start' : 'center',
     height: 44,
     transition: 'all 0.2s ease',
     '&:hover': {
-      backgroundColor: isActive ? '#e6edff' : '#f5f5f5',
+      backgroundColor: isActive ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.1)',
       transform: 'translateX(2px)',
     },
   });
 
   const listItemIconStyles = (isActive = false) => ({
     minWidth: expanded ? 36 : 0,
-    color: isActive ? '#5b8af5' : '#707070',
+    color: 'white',
     transition: 'color 0.2s ease',
     display: 'flex',
     justifyContent: 'center',
+    opacity: isActive ? 1 : 0.8,
   });
 
   const listItemTextStyles = () => ({
@@ -103,6 +106,7 @@ const DashboardLayout = ({ children }) => {
       fontWeight: 600,
       fontSize: '0.95rem',
       letterSpacing: '-0.01em',
+      color: 'white',
     },
   });
 
@@ -121,17 +125,16 @@ const DashboardLayout = ({ children }) => {
         sx={{
           width: expanded ? 240 : 72,
           height: '100vh',
-          backgroundColor: '#fff',
-          borderRight: '1px solid #e0e0e0',
+          background: 'linear-gradient(135deg, #B45ECD 0%, #744FC0 100%)',
           display: 'flex',
           flexDirection: 'column',
           transition: 'width 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
           overflow: 'hidden',
           position: 'fixed',
-          boxShadow: '0 0 10px rgba(0,0,0,0.05)',
+          boxShadow: '0 0 10px rgba(0,0,0,0.1)',
           zIndex: 1200,
           '&:hover': {
-            boxShadow: '0 0 15px rgba(0,0,0,0.1)',
+            boxShadow: '0 0 15px rgba(0,0,0,0.15)',
           },
         }}
         onMouseEnter={handleMouseEnter}
@@ -144,7 +147,7 @@ const DashboardLayout = ({ children }) => {
             alignItems: 'center',
             justifyContent: expanded ? 'flex-start' : 'center',
             p: 2,
-            borderBottom: '1px solid #f0f0f0',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
           }}
         >
           <Box
@@ -161,7 +164,15 @@ const DashboardLayout = ({ children }) => {
               },
             }}
           >
-            <img src="/assets/Logo.png" alt="Veritas" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+            <img 
+              src="/assets/logo_dark.png" 
+              alt="Veritas" 
+              style={{ 
+                width: '100%', 
+                height: '100%', 
+                objectFit: 'contain'
+              }} 
+            />
           </Box>
 
           {expanded && (
@@ -175,6 +186,7 @@ const DashboardLayout = ({ children }) => {
                 opacity: expanded ? 1 : 0,
                 transition: 'opacity 0.3s ease',
                 whiteSpace: 'nowrap',
+                color: 'white',
               }}
             >
               Veritas
@@ -266,15 +278,15 @@ const DashboardLayout = ({ children }) => {
               alignItems: 'center',
               px: expanded ? 3 : 'auto',
               py: 2,
-              borderTop: '1px solid #f0f0f0',
+              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
               mt: 2,
               justifyContent: expanded ? 'flex-start' : 'center',
               textDecoration: 'none',
-              color: 'inherit',
+              color: 'white',
               cursor: 'pointer',
               transition: 'background-color 0.2s ease',
               '&:hover': {
-                backgroundColor: '#f5f5f5',
+                backgroundColor: 'rgba(255, 255, 255, 0.1)',
               },
             }}
           >
@@ -283,7 +295,8 @@ const DashboardLayout = ({ children }) => {
               sx={{
                 width: 36,
                 height: 36,
-                bgcolor: 'var(--primary-color)',
+                bgcolor: 'rgba(255, 255, 255, 0.2)',
+                color: 'white',
                 transition: 'transform 0.2s ease',
                 '&:hover': {
                   transform: 'scale(1.05)',
@@ -311,6 +324,7 @@ const DashboardLayout = ({ children }) => {
                     fontSize: '0.9rem',
                     fontFamily: '"Inter", "Roboto", "Helvetica", sans-serif',
                     letterSpacing: '-0.01em',
+                    color: 'white',
                   }}
                 >
                   {user.email}
@@ -319,7 +333,7 @@ const DashboardLayout = ({ children }) => {
                   sx={{
                     display: 'flex',
                     alignItems: 'center',
-                    color: '#5b8af5',
+                    color: 'rgba(255, 255, 255, 0.8)',
                     fontWeight: 500,
                     fontSize: '0.75rem',
                     fontFamily: '"Inter", "Roboto", "Helvetica", sans-serif',

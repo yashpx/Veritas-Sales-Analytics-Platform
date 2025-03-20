@@ -1,10 +1,13 @@
+import os
 import json
-import logging
-from transformers import AutoModelForSequenceClassification, AutoTokenizer
-import torch
+import groq
+from dotenv import load_dotenv
 
-# Suppress transformer warnings
-logging.getLogger("transformers").setLevel(logging.ERROR)
+# Load environment variables
+load_dotenv()
+
+# Initialize Groq client
+client = groq.Groq(api_key=os.getenv('GROQ_API_KEY'))
 
 # Define the intent labels
 intent_labels = [
@@ -15,61 +18,53 @@ intent_labels = [
     "Neutral"
 ]
 
-# Your Hugging Face model
-model_name = "nigelnoronha/BERT-buyer-intent"
-
-# Load the model and tokenizer once
-model = AutoModelForSequenceClassification.from_pretrained(model_name)
-tokenizer = AutoTokenizer.from_pretrained(model_name)
-
-# Function to predict intent based on the conversation
-def predict_intent(conversation):
-    # Tokenize the conversation
-    inputs = tokenizer(conversation, return_tensors="pt", padding=True, truncation=True, max_length=512)
+def predict_intent_groq(conversation):
+    """
+    Use the Groq client with model llama3-70b-819 to predict buyer intent
+    from the provided conversation text.
+    """
+    # Build a prompt that instructs the model to classify buyer intent
+    prompt = (
+        f"Given the following conversation, classify the buyer's intent "
+        f"into one of these categories: {', '.join(intent_labels)}.\n\n"
+        f"Conversation:\n{conversation}\n\n"
+        f"Buyer Intent:"
+    )
     
-    # Get model predictions
-    with torch.no_grad():
-        outputs = model(**inputs)
+    # Query the Groq API using the specified model.
+    response = client.query(
+        model="llama3-70b-819",
+        prompt=prompt,
+        max_tokens=20,
+        temperature=0.0,
+    )
     
-    # Apply softmax to get probabilities
-    logits = outputs.logits
-    probabilities = torch.softmax(logits, dim=-1)
-    
-    # Get the predicted class (index of the highest probability)
-    predicted_class_idx = torch.argmax(probabilities, dim=-1)
-    
-    # Map the predicted class index to the intent label
-    predicted_intent = intent_labels[predicted_class_idx.item()]
-    
+    # Extract and clean the response text.
+    predicted_intent = response["text"].strip()
     return predicted_intent
 
-# Function to process the transcript and get buyer intent
 def process_intent(file_path):
     """
-    Reads a JSON transcript file, extracts messages from Speaker 2, 
-    and determines the buyer intent.
+    Reads a JSON transcript file, extracts the full conversation,
+    and determines the buyer intent using the Groq model.
     Returns a JSON response with the buyer intent.
     """
     # Open and read the JSON file
     with open(file_path, 'r') as file:
         transcript_data = json.load(file)
-
-    # Extract all Speaker 2 messages
-    prospect_messages = [
-        message["text"]
-        for message in transcript_data["transcript"]
-        if message["speaker"] == "Speaker 2"
-    ]
-
-    # Combine all prospect messages into one text
-    prospect_text = " ".join(prospect_messages)
-
-    # Get intent prediction
-    predicted_intent = predict_intent(prospect_text)
-
+    
+    # Extract the full conversation with speaker labels
+    conversation = ""
+    for message in transcript_data["transcript"]:
+        speaker = message["speaker"]
+        text = message["text"]
+        conversation += f"{speaker}: {text}\n"
+    
+    # Get intent prediction using Groq
+    predicted_intent = predict_intent_groq(conversation)
+    
     # Construct JSON output in the required format
     result = {"nlp": predicted_intent}
-
     return result
 
 # Path to the JSON transcript file

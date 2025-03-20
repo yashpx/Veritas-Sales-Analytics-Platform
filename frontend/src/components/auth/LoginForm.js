@@ -66,8 +66,9 @@ const LoginForm = () => {
               backgroundColor: loginType === 'manager' ? 'var(--primary-color)' : 'transparent',
               color: loginType === 'manager' ? 'white' : 'var(--text-color)',
               border: '1px solid var(--border-color)',
-              borderRadius: '4px',
-              cursor: 'pointer'
+              borderRadius: '20px',
+              cursor: 'pointer',
+              minWidth: '140px'
             }}
           >
             Manager Login
@@ -81,8 +82,9 @@ const LoginForm = () => {
               backgroundColor: loginType === 'sales_rep' ? 'var(--primary-color)' : 'transparent',
               color: loginType === 'sales_rep' ? 'white' : 'var(--text-color)',
               border: '1px solid var(--border-color)',
-              borderRadius: '4px',
-              cursor: 'pointer'
+              borderRadius: '20px',
+              cursor: 'pointer',
+              minWidth: '140px'
             }}
           >
             Sales Rep Login
