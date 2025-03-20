@@ -3,6 +3,7 @@ import axios from 'axios';
 import Input from '../ui/Input';
 import Button from '../ui/Button';
 import { useAuth } from '../../context/AuthContext';
+import { User, Mail, Phone, Lock, UserPlus } from 'lucide-react';
 
 // Updated to use port 5000 where your backend is running
 const API_URL = 'http://localhost:5000/api';
@@ -98,75 +99,101 @@ const RegisterSalesRepForm = ({ onSuccess }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="register-sales-rep-form">
+    <div className="sales-rep-form-container compact">
       {error && <div className="error-message">{error}</div>}
       {success && <div className="success-message">Sales rep registered successfully!</div>}
       
-      <div className="form-row" style={{ display: 'flex', gap: '1rem' }}>
-        <Input
-          label="First Name"
-          name="sales_rep_first_name"
-          type="text"
-          placeholder="John"
-          value={formData.sales_rep_first_name}
-          onChange={handleChange}
-          required
-        />
+      <form onSubmit={handleSubmit} className="register-sales-rep-form">
+        <div className="form-row">
+          <div className="form-column">
+            <Input
+              label="First Name"
+              name="sales_rep_first_name"
+              type="text"
+              placeholder="John"
+              value={formData.sales_rep_first_name}
+              onChange={handleChange}
+              required
+              icon={<User size={16} />}
+            />
+          </div>
+          
+          <div className="form-column">
+            <Input
+              label="Last Name"
+              name="sales_rep_last_name"
+              type="text"
+              placeholder="Doe"
+              value={formData.sales_rep_last_name}
+              onChange={handleChange}
+              required
+              icon={<User size={16} />}
+            />
+          </div>
+        </div>
         
-        <Input
-          label="Last Name"
-          name="sales_rep_last_name"
-          type="text"
-          placeholder="Doe"
-          value={formData.sales_rep_last_name}
-          onChange={handleChange}
-          required
-        />
-      </div>
-      
-      <Input
-        label="Email Address"
-        name="email"
-        type="email"
-        placeholder="john.doe@example.com"
-        value={formData.email}
-        onChange={handleChange}
-        required
-      />
-      
-      <Input
-        label="Phone Number (optional)"
-        name="phone_number"
-        type="tel"
-        placeholder="1234567890"
-        value={formData.phone_number}
-        onChange={handleChange}
-      />
-      
-      <Input
-        label="Password"
-        name="password"
-        type="password"
-        placeholder="••••••••"
-        value={formData.password}
-        onChange={handleChange}
-        required
-      />
-      
-      <Input
-        label="Confirm Password"
-        name="confirmPassword"
-        type="password"
-        placeholder="••••••••"
-        value={formData.confirmPassword}
-        onChange={handleChange}
-        required
-      />
-      
-      <Button type="submit" disabled={loading}>
-        {loading ? 'Registering...' : 'Register Sales Rep'}
-      </Button>
-    </form>
+        <div className="form-row">
+          <div className="form-column">
+            <Input
+              label="Email Address"
+              name="email"
+              type="email"
+              placeholder="john.doe@example.com"
+              value={formData.email}
+              onChange={handleChange}
+              required
+              icon={<Mail size={16} />}
+            />
+          </div>
+          
+          <div className="form-column">
+            <Input
+              label="Phone Number (optional)"
+              name="phone_number"
+              type="tel"
+              placeholder="1234567890"
+              value={formData.phone_number}
+              onChange={handleChange}
+              icon={<Phone size={16} />}
+            />
+          </div>
+        </div>
+        
+        <div className="form-row">
+          <div className="form-column">
+            <Input
+              label="Password"
+              name="password"
+              type="password"
+              placeholder="••••••••"
+              value={formData.password}
+              onChange={handleChange}
+              required
+              icon={<Lock size={16} />}
+            />
+          </div>
+          
+          <div className="form-column">
+            <Input
+              label="Confirm Password"
+              name="confirmPassword"
+              type="password"
+              placeholder="••••••••"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              required
+              icon={<Lock size={16} />}
+            />
+          </div>
+        </div>
+        
+        <div className="form-actions">
+          <Button type="submit" disabled={loading} variant="primary">
+            {loading ? 'Registering...' : 'Register Sales Rep'}
+          </Button>
+        </div>
+      </form>
+    </div>
   );
 };
 

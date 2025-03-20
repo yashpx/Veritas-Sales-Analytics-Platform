@@ -3,11 +3,14 @@
 import React from 'react';
 import './ui.css';
 
-const Input = ({ label, ...props }) => {
+const Input = ({ label, icon, ...props }) => {
   return (
     <div className="ui-input-container">
       {label && <label className="ui-label">{label}</label>}
-      <input className="ui-input" {...props} />
+      <div className="ui-input-wrapper">
+        {icon && <div className="ui-input-icon">{icon}</div>}
+        <input className={`ui-input ${icon ? 'with-icon' : ''}`} {...props} />
+      </div>
     </div>
   );
 };

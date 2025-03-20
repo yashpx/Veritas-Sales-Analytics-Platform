@@ -649,6 +649,162 @@
   animation: modalFadeIn 0.3s;
 }
 
+/* Sales Rep Modal Styles */
+.add-rep-modal {
+  background-color: white;
+  border-radius: 12px;
+  width: 90%;
+  max-width: 540px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  overflow: hidden;
+  animation: modalFadeIn 0.3s;
+  max-height: 90vh;
+  display: flex;
+  flex-direction: column;
+}
+
+@keyframes modalFadeIn {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.modal-header {
+  padding: 20px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  background-color: #f9f7fe;
+}
+
+.modal-header h2 {
+  margin: 0;
+  font-size: 20px;
+  color: var(--primary-color);
+  font-weight: 600;
+}
+
+.close-modal-btn {
+  background: none;
+  border: none;
+  font-size: 22px;
+  color: var(--text-medium);
+  cursor: pointer;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+
+.close-modal-btn:hover {
+  background-color: var(--secondary-color);
+  color: var(--primary-color);
+}
+
+/* Sales Rep Form Container */
+.sales-rep-form-container {
+  padding: 16px 24px;
+}
+
+.sales-rep-form-container.compact {
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.sales-rep-form-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-top: 16px;
+  text-align: center;
+}
+
+.form-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background-color: #f5f0ff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  color: var(--primary-color);
+}
+
+.sales-rep-form-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-dark);
+  margin: 0 0 8px;
+}
+
+.sales-rep-form-header p {
+  font-size: 14px;
+  color: var(--text-medium);
+  margin: 0;
+}
+
+.register-sales-rep-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-section {
+  margin-bottom: 16px;
+  padding: 16px;
+  background-color: #f9f7fe;
+  border-radius: 8px;
+  border-left: 3px solid var(--primary-color);
+}
+
+.form-section-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--primary-color);
+  margin: 0 0 12px;
+  display: flex;
+  align-items: center;
+}
+
+.form-row {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 10px;
+}
+
+.form-column {
+  flex: 1;
+}
+
+.form-actions {
+  margin-top: 16px;
+  margin-bottom: 10px;
+}
+
+.sales-rep-form-container .ui-button {
+  height: 2.5rem;
+  margin-top: 5px;
+}
+
+@media (max-width: 576px) {
+  .form-row {
+    flex-direction: column;
+    gap: 0;
+  }
+  
+  .form-section {
+    padding: 16px;
+  }
+  
+  .add-rep-modal {
+    width: 95%;
+  }
+}
+
 @keyframes modalFadeIn {
   from { opacity: 0; transform: translateY(-20px); }
   to { opacity: 1; transform: translateY(0); }

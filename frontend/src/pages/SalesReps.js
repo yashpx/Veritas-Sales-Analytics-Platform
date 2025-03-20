@@ -581,7 +581,7 @@ const SalesReps = () => {
           <div className="modal-overlay" onClick={(e) => {
             if (e.target.className === 'modal-overlay') setIsAddingRep(false);
           }}>
-            <div className="add-rep-modal slide-up">
+            <div className="add-rep-modal">
               <div className="modal-header">
                 <h2>Add New Sales Representative</h2>
                 <button className="close-modal-btn" onClick={() => setIsAddingRep(false)}>×</button>
