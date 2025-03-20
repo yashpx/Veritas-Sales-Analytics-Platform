@@ -4,7 +4,6 @@ import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
-import twilioApiClient from '../utils/twilioApiClient';
 import supabase from '../utils/supabaseClient';
 import { Search, Phone, User } from 'lucide-react';
 import '../styles/dialpad.css';
@@ -134,11 +133,10 @@ const DialPad = () => {
 
     try {
       setCallStatus('calling');
-      // Call Twilio API to initiate call
-      const response = await twilioApiClient.startCall(phoneNumber);
       
-      // Store call ID for future reference
-      const callId = response.callId;
+      // Generate a call ID for reference (simulating an actual call service)
+      const callId = `call_${Math.random().toString(36).substring(2, 11)}`;
+      console.log('Simulated call initiated with ID:', callId);
       
       // For demo purposes, simulate connection after 2 seconds
       setTimeout(() => {
@@ -157,8 +155,8 @@ const DialPad = () => {
 
   const handleEndCall = async () => {
     try {
-      // End the call via Twilio API
-      await twilioApiClient.endCall();
+      // End the simulated call
+      console.log('Simulated call ended');
       
       setCallStatus('ended');
       if (timerInterval) {
@@ -169,55 +167,46 @@ const DialPad = () => {
       // Find the selected contact data (for customer details)
       const selectedContact = contacts.find(c => c.phone === phoneNumber);
       
-      // Direct database call to log the call
       try {
-        console.log('Attempting to log call directly from DialPad component');
+        console.log('Logging call to Supabase');
         
-        // Get current user from context instead of auth API
-        if (!user) {
-          console.error('No authenticated user in context!');
-          throw new Error('No authenticated user in context');
-        }
-        
-        console.log('Current user from context:', user);
-        
-        // Get or create sales rep - handle both authentication types
+        // Get or determine sales rep ID
         let salesRepId;
         
-        // If we're using a sales rep login, the sales_rep_id might be directly available
         if (user.salesRepId) {
           salesRepId = user.salesRepId;
-          console.log('Using sales rep ID from user context:', salesRepId);
         } else {
-          // Try to find the sales rep by user_id or email
+          // Look up sales rep by user ID or email
           let salesRepQuery;
           
           if (user.id) {
-            // First try by user_id if available
             salesRepQuery = await supabase
               .from('sales_reps')
               .select('sales_rep_id')
               .eq('user_id', user.id)
               .single();
+              
+            if (salesRepQuery.data) {
+              salesRepId = salesRepQuery.data.sales_rep_id;
+            }
           }
           
-          // If no result and we have an email, try by email
-          if ((!salesRepQuery?.data || salesRepQuery?.error) && user.email) {
+          // If not found and we have email, try that
+          if (!salesRepId && user.email) {
             salesRepQuery = await supabase
               .from('sales_reps')
               .select('sales_rep_id')
               .eq('Email', user.email)
               .single();
+              
+            if (salesRepQuery.data) {
+              salesRepId = salesRepQuery.data.sales_rep_id;
+            }
           }
           
-          console.log('Sales rep lookup result:', salesRepQuery);
-          
-          if (salesRepQuery?.data) {
-            salesRepId = salesRepQuery.data.sales_rep_id;
-            console.log('Found sales rep ID:', salesRepId);
-          } else {
-            // Create a new sales rep
-            const { data: newSalesRep, error: createSalesRepError } = await supabase
+          // If still not found, create a new sales rep
+          if (!salesRepId) {
+            const { data: newRep } = await supabase
               .from('sales_reps')
               .insert([{
                 sales_rep_first_name: user.email?.split('@')[0] || 'New',
@@ -227,43 +216,33 @@ const DialPad = () => {
               }])
               .select();
               
-            if (createSalesRepError) {
-              console.error('Failed to create sales rep:', createSalesRepError);
-              
-              // Use ID 1 as fallback if cannot create
-              salesRepId = 1;
-              console.warn('Using default sales rep ID (1) due to error');
-            } else if (newSalesRep && newSalesRep.length > 0) {
-              salesRepId = newSalesRep[0].sales_rep_id;
-              console.log('Created new sales rep with ID:', salesRepId);
+            if (newRep && newRep.length > 0) {
+              salesRepId = newRep[0].sales_rep_id;
             } else {
-              // Default fallback
+              // Fallback
               salesRepId = 1;
-              console.warn('Using default sales rep ID (1) as fallback');
             }
           }
         }
         
-        // Get or create customer
-        let customerId = 1; // Default fallback
+        // Get or determine customer ID
+        let customerId;
         
         if (selectedContact && selectedContact.id) {
           customerId = selectedContact.id;
-          console.log('Using selected contact ID:', customerId);
-        } else if (phoneNumber) {
+        } else {
           // Look for customer with this phone number
-          const { data: customerData } = await supabase
+          const { data: customer } = await supabase
             .from('customers')
             .select('customer_id')
             .eq('phone number', phoneNumber.toString())
             .maybeSingle();
             
-          if (customerData) {
-            customerId = customerData.customer_id;
-            console.log('Found customer with ID:', customerId);
+          if (customer) {
+            customerId = customer.customer_id;
           } else {
-            // Create new customer with the phone number
-            const { data: newCustomer, error: createCustomerError } = await supabase
+            // Create new customer
+            const { data: newCustomer } = await supabase
               .from('customers')
               .insert([{
                 customer_first_name: 'Unknown',
@@ -272,11 +251,11 @@ const DialPad = () => {
               }])
               .select();
               
-            if (!createCustomerError && newCustomer?.length > 0) {
+            if (newCustomer && newCustomer.length > 0) {
               customerId = newCustomer[0].customer_id;
-              console.log('Created new customer with ID:', customerId);
             } else {
-              console.warn('Using default customer ID due to error:', createCustomerError);
+              // Fallback
+              customerId = 1;
             }
           }
         }
@@ -284,133 +263,73 @@ const DialPad = () => {
         // Calculate duration in minutes (minimum 1 minute)
         const durationMinutes = Math.max(1, Math.ceil(callDuration / 60));
         
-        // Create the call log entry
+        // Create single call log entry
         const callLogEntry = {
           sales_rep_id: salesRepId,
           customer_id: customerId,
           call_date: new Date().toISOString(),
           duration_minutes: durationMinutes,
-          call_outcome: 'In-progress', // Valid enum value as per constraint
+          call_outcome: 'In-progress', // Valid enum value
           notes: null,
           transcription: null,
           "Sentiment Result": null
         };
         
-        console.log('Inserting call log:', callLogEntry);
+        console.log('Inserting single call log entry:', callLogEntry);
         
-        // Check RLS policies
-        console.log('Checking database tables and policies');
-        
-        // First try reading from call_logs to verify access
-        const { data: existingLogs, error: readError } = await supabase
-          .from('call_logs')
-          .select('call_id')
-          .limit(1);
-          
-        console.log('Access check result:', { 
-          data: existingLogs, 
-          error: readError, 
-          hasReadAccess: !readError && Array.isArray(existingLogs) 
-        });
-        
-        // Let's try alternative approaches to insert the call log
-        // Try method 1: Use a transaction to batch operations and possibly avoid RLS issues
-        console.log('Attempting insert with transaction...');
-        try {
-          const { data: batchData, error: batchError } = await supabase
-            .from('call_logs')
-            .insert([callLogEntry], { returning: true });
-            
-          console.log('Transaction insert result:', { data: batchData, error: batchError });
-          
-          if (!batchError && batchData) {
-            console.log('Transaction insert succeeded!');
-            return { callId: batchData[0]?.call_id, success: true };
-          }
-        } catch (batchErr) {
-          console.error('Transaction error:', batchErr);
-        }
-        
-        // Try method 2: Try with different options
-        console.log('Attempting insert with different content type...');
-        try {
-          // Create a direct fetch to Supabase bypassing the JS client
-          const { data: { session } } = await supabase.auth.getSession();
-          const authToken = session?.access_token;
-          const response = await fetch(`${supabaseUrl}/rest/v1/call_logs`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': supabaseKey,
-              'Authorization': `Bearer ${authToken}`,
-              'Prefer': 'return=minimal'
-            },
-            body: JSON.stringify(callLogEntry)
-          });
-          
-          console.log('Direct fetch result:', {
-            status: response.status,
-            statusText: response.statusText,
-            responseText: await response.text()
-          });
-          
-          if (response.ok) {
-            console.log('Direct fetch insert succeeded!');
-            return { success: true };
-          }
-        } catch (fetchErr) {
-          console.error('Direct fetch error:', fetchErr);
-        }
-          
-        // If RPC failed, try the regular insert
-        console.log('Attempting regular insert');
+        // Make a single database insert
         const { data, error } = await supabase
           .from('call_logs')
-          .insert([callLogEntry]);
+          .insert([callLogEntry])
+          .select();
           
-        console.log('Insert result:', { data, error });
-        
         if (error) {
-          console.error('Failed to log call with all methods:', error);
-          
-          // Final fallback - fake success and just save the data in localStorage
+          throw error;
+        }
+        
+        console.log('Call logged successfully:', data);
+        setCallLogged(true);
+        setTimeout(() => {
+          setCallLogged(false);
+        }, 5000);
+      } catch (dbError) {
+        console.error('Failed to log call to database:', dbError);
+        
+        // Fallback to localStorage
+        try {
           console.log('Using localStorage fallback to record the call');
           
-          try {
-            // Get existing call logs from localStorage or initialize an empty array
-            const storedLogs = JSON.parse(localStorage.getItem('callLogs') || '[]');
-            
-            // Add this call log
-            storedLogs.push({
-              ...callLogEntry,
-              call_id: Date.now(), // Use timestamp as a fake ID
-              created_at: new Date().toISOString()
-            });
-            
-            // Save the updated logs
-            localStorage.setItem('callLogs', JSON.stringify(storedLogs));
-            console.log('Call saved to localStorage successfully');
-            
-            // Show success anyway since the call was recorded locally
-            setCallLogged(true);
-            setTimeout(() => {
-              setCallLogged(false);
-            }, 5000);
-          } catch (localStorageErr) {
-            console.error('Even localStorage fallback failed:', localStorageErr);
-            alert('Failed to log call. Please try again later.');
-          }
-        } else {
-          console.log('Call logged successfully to database!');
+          // Create a simplified call log entry for localStorage
+          const callLogEntry = {
+            phoneNumber: phoneNumber,
+            contact: selectedContact ? selectedContact.name : 'Unknown',
+            date: new Date().toISOString(),
+            duration: Math.max(1, Math.ceil(callDuration / 60)),
+            outcome: 'In-progress'
+          };
+          
+          // Get existing logs or initialize an empty array
+          const storedLogs = JSON.parse(localStorage.getItem('callLogs') || '[]');
+          
+          // Add this call log
+          storedLogs.push({
+            ...callLogEntry,
+            id: Date.now()
+          });
+          
+          // Save to localStorage
+          localStorage.setItem('callLogs', JSON.stringify(storedLogs));
+          console.log('Call saved to localStorage successfully');
+          
+          // Show success message
           setCallLogged(true);
-          // Hide the success message after 5 seconds
           setTimeout(() => {
             setCallLogged(false);
           }, 5000);
+        } catch (localStorageErr) {
+          console.error('Even localStorage fallback failed:', localStorageErr);
+          alert('Failed to log call. Please try again later.');
         }
-      } catch (dbError) {
-        console.error('Database operation failed:', dbError);
-        alert('Failed to log call: ' + (dbError.message || 'Unknown error'));
       }
       
       console.log(`Call ended. Duration: ${formatTime(callDuration)}`);
@@ -422,7 +341,7 @@ const DialPad = () => {
       }, 2000);
     } catch (error) {
       console.error('Error ending call:', error);
-      // Still end the call UI even if API fails
+      // Still end the call UI even if something fails
       setCallStatus('idle');
       if (timerInterval) {
         clearInterval(timerInterval);

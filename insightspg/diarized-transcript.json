@@ -8,7 +8,7 @@
     },
     {
       "speaker": "Speaker 1",
-      "text": "Sarah: Yes, speaking.",
+      "text": "Elijah: Yes, speaking.",
       "start": 5,
       "end": 10
     },
@@ -26,123 +26,111 @@
     },
     {
       "speaker": "Speaker 1",
-      "text": "Sarah: What's this about?",
+      "text": "Elijah: What's this about?",
       "start": 20,
       "end": 25
     },
     {
       "speaker": "Speaker 1",
-      "text": "Alice: Well, we sell software.",
+      "text": "Alice: Well, we sell software. I mean, we are an IT solutions company and we thought you might be interested.",
       "start": 25,
       "end": 30
     },
     {
       "speaker": "Speaker 1",
-      "text": "Alice: I mean, we are an IT solutions company and we thought you might be interested.",
+      "text": "Alice: Are you looking to buy anything?",
       "start": 30,
       "end": 35
     },
     {
       "speaker": "Speaker 1",
-      "text": "Alice: Are you looking to buy anything?",
+      "text": "Elijah: Not really.",
       "start": 35,
       "end": 40
     },
     {
       "speaker": "Speaker 1",
-      "text": "Sarah: Not really.",
+      "text": "Elijah: I'm busy right now, actually.",
       "start": 40,
       "end": 45
     },
     {
       "speaker": "Speaker 1",
-      "text": "Sarah: I'm busy right now, actually.",
+      "text": "Alice: Oh, okay.",
       "start": 45,
       "end": 50
     },
     {
       "speaker": "Speaker 1",
-      "text": "Alice: Oh, okay.",
+      "text": "Alice: But maybe, I mean, our product could save you money.",
       "start": 50,
       "end": 55
     },
     {
       "speaker": "Speaker 1",
-      "text": "Alice: But maybe, I mean, our product could save you money.",
+      "text": "Elijah: Probably.",
       "start": 55,
       "end": 60
     },
     {
       "speaker": "Speaker 1",
-      "text": "Sarah: Probably.",
+      "text": "Alice: We could set a demo or something.",
       "start": 60,
       "end": 65
     },
     {
       "speaker": "Speaker 1",
-      "text": "Alice: We could set a demo or something.",
+      "text": "Elijah: What exactly does your product do?",
       "start": 65,
       "end": 70
     },
     {
       "speaker": "Speaker 1",
-      "text": "Sarah: What exactly does your product do?",
+      "text": "Alice: Well, it does a lot of things. Helps with management, I think, and analytics.",
       "start": 70,
       "end": 75
     },
     {
       "speaker": "Speaker 1",
-      "text": "Alice: Well, it does a lot of things.",
+      "text": "Alice: Actually, I'm pretty new here, so I don't know all the details yet.",
       "start": 75,
       "end": 80
     },
     {
       "speaker": "Speaker 1",
-      "text": "Alice: Helps with management, I think, and analytics.",
+      "text": "Elijah: Look, this isn't a good time.",
       "start": 80,
       "end": 85
     },
     {
       "speaker": "Speaker 1",
-      "text": "Alice: Actually, I'm pretty new here, so I don't know all the details yet.",
+      "text": "Elijah: Maybe another time.",
       "start": 85,
       "end": 90
     },
     {
       "speaker": "Speaker 1",
-      "text": "Sarah: Look, this isn't a good time.",
+      "text": "Elijah: sure I guess",
       "start": 90,
       "end": 95
     },
     {
       "speaker": "Speaker 1",
-      "text": "Sarah: Maybe another time.",
+      "text": "Elijah: can I call you tomorrow",
       "start": 95,
       "end": 100
     },
     {
       "speaker": "Speaker 1",
-      "text": "Alice: sure I guess",
+      "text": "Elijah: I'll call you if I need something",
       "start": 100,
       "end": 105
     },
     {
       "speaker": "Speaker 1",
-      "text": "Sarah: can I call you tomorrow",
+      "text": "Elijah: bye",
       "start": 105,
       "end": 110
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Sarah: I'll call you if I need something",
-      "start": 110,
-      "end": 115
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Sarah: bye",
-      "start": 115,
-      "end": 120
     }
   ]
 }

@@ -2,14 +2,21 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { 
   Box, Paper, Typography, CircularProgress, Alert, Snackbar,
-  Card, CardContent, Button, Chip, Divider, Grid, Rating
+  Card, CardContent, Button, Chip, Divider, Grid, Rating,
+  Select, MenuItem, FormControl, InputLabel, FormHelperText
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import AssessmentIcon from '@mui/icons-material/Assessment';
+import SaveIcon from '@mui/icons-material/Save';
+import DoneIcon from '@mui/icons-material/Done';
+import AutoFixHighIcon from '@mui/icons-material/AutoFixHigh';
+import PsychologyIcon from '@mui/icons-material/Psychology';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import { useAuth } from '../context/AuthContext';
 import { fetchCallInsights } from '../utils/insightsService';
+import { updateCallOutcome, fetchTranscription } from '../utils/callsService';
+import groqApi from '../utils/groqApiClient';
 
 const CallInsights = () => {
   const { user } = useAuth();
@@ -19,7 +26,35 @@ const CallInsights = () => {
   const [error, setError] = useState(null);
   const [openSnackbar, setOpenSnackbar] = useState(false);
   const [insights, setInsights] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [selectedOutcome, setSelectedOutcome] = useState('');
+  const [updatingOutcome, setUpdatingOutcome] = useState(false);
+  const [outcomeUpdated, setOutcomeUpdated] = useState(false);
+  const [recommendedOutcome, setRecommendedOutcome] = useState('');
+  const [analysisLoading, setAnalysisLoading] = useState(false);
   const callData = location.state?.callData;
+
+  // Initialize the selected outcome from call data
+  useEffect(() => {
+    if (callData && callData.outcome) {
+      setSelectedOutcome(callData.outcome);
+    }
+  }, [callData]);
+  
+  // Auto-recommend outcome when insights are loaded
+  useEffect(() => {
+    if (insights && callData) {
+      // Calculate recommended outcome based on insights
+      const outcome = determineRecommendedOutcome();
+      setRecommendedOutcome(outcome);
+      console.log(`Auto-recommended outcome: ${outcome} based on insights`);
+      
+      // Just recommend but don't apply automatically - user needs to confirm
+      if (outcome !== callData.outcome) {
+        console.log('Recommendation differs from current outcome, suggesting change');
+      }
+    }
+  }, [insights, callData]);
 
   useEffect(() => {
     const loadInsights = async () => {
@@ -51,6 +86,93 @@ const CallInsights = () => {
 
     loadInsights();
   }, [callData]);
+  
+  // Automatically determine recommended outcome from insights data
+  const determineRecommendedOutcome = () => {
+    if (!insights) return 'In-progress';
+    
+    const { rating, buyer_intent, strengths, areas_for_improvement } = insights;
+    
+    // Logic to determine outcome based on insights
+    if (rating >= 80 || buyer_intent === 'Very Interested' || buyer_intent === 'Interested') {
+      return 'Closed'; // High rating or interested buyer suggests a successful call
+    } else if (rating < 50 || buyer_intent === 'Not Interested' || buyer_intent === 'Objecting') {
+      return 'Fail'; // Low rating or uninterested buyer suggests a failed call
+    } else {
+      return 'In-progress'; // Neutral or unclear outcome
+    }
+  };
+  
+  // Apply AI recommendation
+  const handleApplyRecommendation = () => {
+    setSelectedOutcome(recommendedOutcome);
+  };
+  
+  // Analyze call with AI
+  const handleAnalyzeWithAI = async () => {
+    try {
+      setAnalysisLoading(true);
+      setError(null);
+      
+      // Fetch the transcription for analysis
+      const transcription = await fetchTranscription(callData.id);
+      
+      if (!transcription || transcription.length === 0) {
+        throw new Error('No transcription found for this call');
+      }
+      
+      // Use the LLM to classify the call outcome
+      const classifiedOutcome = await groqApi.classifyCallOutcome(transcription);
+      
+      // Update the recommended outcome
+      setRecommendedOutcome(classifiedOutcome);
+      
+      setSuccess(`AI analysis complete. Recommended outcome: ${classifiedOutcome}`);
+      setOpenSnackbar(true);
+      setAnalysisLoading(false);
+    } catch (err) {
+      console.error('Error analyzing call with AI:', err);
+      setError(err.message || 'Failed to analyze call with AI');
+      setOpenSnackbar(true);
+      setAnalysisLoading(false);
+    }
+  };
+  
+  // Handle outcome change
+  const handleOutcomeChange = (event) => {
+    setSelectedOutcome(event.target.value);
+  };
+  
+  // Handle saving the new outcome
+  const handleSaveOutcome = async () => {
+    if (!callData || !callData.id || !selectedOutcome) {
+      setError("Cannot update outcome: missing call data or outcome");
+      setOpenSnackbar(true);
+      return;
+    }
+    
+    try {
+      setUpdatingOutcome(true);
+      
+      // Update the call outcome in Supabase
+      await updateCallOutcome(callData.id, selectedOutcome);
+      
+      // Update local callData
+      if (callData) {
+        callData.outcome = selectedOutcome;
+      }
+      
+      setOutcomeUpdated(true);
+      setSuccess("Call outcome updated successfully");
+      setOpenSnackbar(true);
+      setUpdatingOutcome(false);
+    } catch (err) {
+      console.error("Error updating call outcome:", err);
+      setError(err.message || "Failed to update call outcome");
+      setOpenSnackbar(true);
+      setUpdatingOutcome(false);
+    }
+  };
 
   // Handle snackbar close
   const handleCloseSnackbar = () => {
@@ -192,10 +314,10 @@ const CallInsights = () => {
               size="small"
             />
             <Chip 
-              label={`Outcome: ${callData.outcome}`} 
+              label={`Outcome: ${outcomeUpdated ? selectedOutcome : callData.outcome}`} 
               color={
-                callData.outcome.toLowerCase() === 'closed' ? 'success' : 
-                callData.outcome.toLowerCase() === 'in-progress' ? 'warning' : 'error'
+                (outcomeUpdated ? selectedOutcome : callData.outcome) === 'Closed' ? 'success' : 
+                (outcomeUpdated ? selectedOutcome : callData.outcome) === 'In-progress' ? 'warning' : 'error'
               }
               size="small"
             />
@@ -224,6 +346,128 @@ const CallInsights = () => {
           </Alert>
         ) : insights ? (
           <Box>
+            {/* Call Outcome Update Section */}
+            <Paper
+              sx={{
+                p: 3,
+                borderRadius: 2,
+                boxShadow: '0 4px 15px rgba(0,0,0,0.1)',
+                border: '1px solid rgba(0,0,0,0.05)',
+                mb: 4,
+                backgroundColor: outcomeUpdated ? 'rgba(76, 175, 80, 0.08)' : 'white'
+              }}
+            >
+              <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, color: 'text.primary' }}>
+                Call Outcome
+              </Typography>
+              <Box sx={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                  <FormControl sx={{ minWidth: 220 }}>
+                    <InputLabel id="outcome-select-label">Outcome</InputLabel>
+                    <Select
+                      labelId="outcome-select-label"
+                      id="outcome-select"
+                      value={selectedOutcome}
+                      label="Outcome"
+                      onChange={handleOutcomeChange}
+                      disabled={updatingOutcome || analysisLoading}
+                    >
+                      <MenuItem value="In-progress">In Progress</MenuItem>
+                      <MenuItem value="Closed">Closed (Success)</MenuItem>
+                      <MenuItem value="Fail">Failed</MenuItem>
+                    </Select>
+                    {insights && (
+                      <Box>
+                        <FormHelperText>
+                          Buyer Intent: {insights.buyer_intent} | Rating: {insights.rating}%
+                        </FormHelperText>
+                        {recommendedOutcome && recommendedOutcome !== selectedOutcome && (
+                          <Box sx={{ mt: 1, display: 'flex', alignItems: 'center' }}>
+                            <Typography variant="caption" fontWeight="500" sx={{ color: 'text.secondary', mr: 1 }}>
+                              AI Recommends:
+                            </Typography>
+                            <Chip 
+                              label={recommendedOutcome === 'Closed' ? 'Closed (Success)' : 
+                                    recommendedOutcome === 'In-progress' ? 'In Progress' : 'Failed'}
+                              size="small"
+                              color={
+                                recommendedOutcome === 'Closed' ? 'success' :
+                                recommendedOutcome === 'In-progress' ? 'warning' : 'error'
+                              }
+                              sx={{ height: 20, fontSize: '0.7rem' }}
+                            />
+                          </Box>
+                        )}
+                      </Box>
+                    )}
+                  </FormControl>
+                  
+                  <Box sx={{ display: 'flex', gap: 1 }}>
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<PsychologyIcon />}
+                      onClick={handleAnalyzeWithAI}
+                      disabled={updatingOutcome || analysisLoading || !callData}
+                      sx={{
+                        textTransform: 'none',
+                        fontWeight: 500,
+                        borderColor: 'primary.main',
+                        color: 'primary.main',
+                        '&:hover': { backgroundColor: 'rgba(79, 70, 229, 0.08)' }
+                      }}
+                    >
+                      {analysisLoading ? (
+                        <>
+                          <CircularProgress size={16} sx={{ mr: 1 }} />
+                          Analyzing...
+                        </>
+                      ) : 'Analyze with AI'}
+                    </Button>
+                    
+                    <Button
+                      variant="outlined"
+                      size="small"
+                      startIcon={<AutoFixHighIcon />}
+                      onClick={handleApplyRecommendation}
+                      disabled={updatingOutcome || analysisLoading || !insights || !recommendedOutcome}
+                      sx={{
+                        textTransform: 'none',
+                        fontWeight: 500,
+                        borderColor: 'primary.main',
+                        color: 'primary.main',
+                        '&:hover': { backgroundColor: 'rgba(79, 70, 229, 0.08)' }
+                      }}
+                    >
+                      Apply recommendation
+                    </Button>
+                  </Box>
+                </Box>
+                
+                <Button
+                  variant="contained"
+                  startIcon={outcomeUpdated ? <DoneIcon /> : <SaveIcon />}
+                  onClick={handleSaveOutcome}
+                  disabled={updatingOutcome || (selectedOutcome === callData?.outcome && !outcomeUpdated)}
+                  color={outcomeUpdated ? "success" : "primary"}
+                  sx={{
+                    textTransform: 'none',
+                    fontWeight: 600,
+                    px: 2,
+                    py: 1
+                  }}
+                >
+                  {updatingOutcome ? "Updating..." : outcomeUpdated ? "Updated" : "Update Outcome"}
+                </Button>
+                {outcomeUpdated && (
+                  <Typography variant="body2" sx={{ color: 'success.main' }}>
+                    <CheckCircleIcon sx={{ fontSize: 16, mr: 0.5, verticalAlign: 'text-bottom' }} />
+                    Call outcome saved successfully
+                  </Typography>
+                )}
+              </Box>
+            </Paper>
+            
             {/* Rating and Summary Card */}
             <Paper 
               sx={{ 
@@ -446,11 +690,11 @@ const CallInsights = () => {
         >
           <Alert 
             onClose={handleCloseSnackbar} 
-            severity="error" 
+            severity={error ? "error" : "success"} 
             variant="filled"
             sx={{ width: '100%' }}
           >
-            {error}
+            {error || success}
           </Alert>
         </Snackbar>
       </Box>

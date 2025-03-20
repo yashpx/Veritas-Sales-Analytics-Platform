@@ -230,49 +230,23 @@ class TwilioApiClient {
       
       console.log('Inserting call log entry:', callLogEntry);
       
-      // Store call data in Supabase
+      // Handle constraint issues before attempting to insert
+      if (!['In-progress', 'Closed', 'Fail'].includes(callLogEntry.call_outcome)) {
+        console.log('Ensuring valid call_outcome value');
+        callLogEntry.call_outcome = 'In-progress';
+      }
+      
+      // Store call data in Supabase with a single attempt
+      console.log('Inserting call log with validated data:', callLogEntry);
       const { data, error } = await supabase
         .from('call_logs')
-        .insert([callLogEntry]);
+        .insert([callLogEntry])
+        .select();
       
       console.log('Insert result:', { data, error });
         
       if (error) {
         console.error('Failed to insert call log:', error);
-        
-        // Check specifically for constraint errors
-        if (error.code === '23514') {
-          console.error('Constraint violation. Likely the call_outcome constraint.');
-          // Try with an allowed value for call_outcome
-          const retryEntry = {...callLogEntry, call_outcome: 'In-progress'};
-          console.log('Retrying with valid call_outcome:', retryEntry);
-          
-          const retryResult = await supabase
-            .from('call_logs')
-            .insert([retryEntry]);
-            
-          console.log('Retry result:', retryResult);
-          if (retryResult.error) {
-            throw retryResult.error;
-          }
-          return retryResult.data;
-        } 
-        // Check for permissions issues (RLS might be blocking)
-        else if (error.code === 'PGRST301' || error.message?.includes('permission denied')) {
-          console.error('Permission denied. Might be a Row Level Security (RLS) issue.');
-          
-          // Try using upsert which sometimes bypasses certain RLS policies
-          const upsertResult = await supabase
-            .from('call_logs')
-            .upsert([callLogEntry]);
-            
-          console.log('Upsert attempt result:', upsertResult);
-          if (upsertResult.error) {
-            throw upsertResult.error;
-          }
-          return upsertResult.data;
-        }
-        
         throw error;
       }
       

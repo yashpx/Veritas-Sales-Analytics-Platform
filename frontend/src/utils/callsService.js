@@ -627,3 +627,57 @@ export const getCallAudioUrl = async (callId) => {
     throw error;
   }
 };
+
+/**
+ * Updates the call outcome status in Supabase
+ * @param {number} callId - Call ID to update
+ * @param {string} outcome - New outcome status ('Closed', 'Failed', 'In Progress')
+ * @returns {Promise} - Promise with updated call data
+ */
+export const updateCallOutcome = async (callId, outcome) => {
+  try {
+    console.log(`Updating call ${callId} outcome to ${outcome}`);
+    
+    // Validate the outcome value - must match database constraints
+    const validOutcomes = ['Closed', 'Fail', 'In-progress'];
+    const finalOutcome = validOutcomes.includes(outcome) ? outcome : 'In-progress';
+    
+    // Update the call_logs table
+    const { data, error } = await supabase
+      .from('call_logs')
+      .update({ 
+        call_outcome: finalOutcome
+      })
+      .eq('call_id', callId);
+    
+    if (error) {
+      console.error('Error updating call outcome in database:', error);
+      throw error;
+    }
+    
+    console.log(`Call ${callId} outcome updated to ${finalOutcome}`);
+    
+    // Also update the outcome in localStorage if we have the call data cached
+    try {
+      const cachedCallData = localStorage.getItem(`call_data_${callId}`);
+      if (cachedCallData) {
+        const callData = JSON.parse(cachedCallData);
+        callData.outcome = finalOutcome;
+        localStorage.setItem(`call_data_${callId}`, JSON.stringify(callData));
+        console.log(`Updated cached call data for call ${callId}`);
+      }
+    } catch (cacheError) {
+      console.warn('Error updating cached call data:', cacheError);
+      // Continue even if cache update fails
+    }
+    
+    return {
+      success: true,
+      callId,
+      outcome: finalOutcome
+    };
+  } catch (error) {
+    console.error(`Error updating call outcome for call ID ${callId}:`, error);
+    throw error;
+  }
+};

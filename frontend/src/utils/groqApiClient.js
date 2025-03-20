@@ -688,7 +688,50 @@ const groqApi = {
   mergeSegments,
   splitSegment,
   cleanTranscriptWithGroq,
-  generateInsights
+  generateInsights,
+  classifyCallOutcome: async (transcription) => {
+    try {
+      // Use Llama 3.3 70B with Groq to classify the call outcome
+      const response = await groqClient.post('/chat/completions', {
+        model: 'llama-3.3-70b-versatile',
+        messages: [
+          {
+            role: 'system',
+            content: 'You are an expert AI assistant specialized in analyzing sales calls and determining their outcomes. Your task is to classify each call as either "Closed" (successful), "Fail" (unsuccessful), or "In-progress" (requiring follow-up).'
+          },
+          {
+            role: 'user',
+            content: `Please analyze this sales call transcription and classify the outcome as one of the following:
+
+1. "Closed" - The call was successful, with a commitment from the customer, a sale, or achieving the sales rep's goal.
+2. "Fail" - The call was unsuccessful, with a clear rejection or negative response from the customer.
+3. "In-progress" - The call is inconclusive, requires follow-up, or shows ongoing interest without clear commitment.
+
+Reply with ONLY one of these three values: "Closed", "Fail", or "In-progress".
+
+Here's the call transcript: ${JSON.stringify(transcription)}`
+          }
+        ],
+        temperature: 0.1,
+        max_tokens: 10
+      });
+      
+      // Extract the raw text response
+      const outcome = response.data.choices[0].message.content.trim();
+      
+      // Validate and normalize outcome
+      if (['Closed', 'Fail', 'In-progress'].includes(outcome)) {
+        return outcome;
+      } else {
+        // Default to In-progress if the model returns an unexpected value
+        console.warn('LLM returned unexpected outcome value:', outcome);
+        return 'In-progress';
+      }
+    } catch (error) {
+      console.error('Call outcome classification error:', error);
+      throw error;
+    }
+  }
 };
 
 export default groqApi;

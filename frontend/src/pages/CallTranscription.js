@@ -10,7 +10,14 @@ import {
   Snackbar,
   Chip,
   Divider,
-  Tooltip
+  Tooltip,
+  Menu,
+  MenuItem,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle
 } from '@mui/material';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
 import PauseIcon from '@mui/icons-material/Pause';
@@ -20,10 +27,13 @@ import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DownloadIcon from '@mui/icons-material/Download';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import VisibilityIcon from '@mui/icons-material/Visibility';
+import EditIcon from '@mui/icons-material/Edit';
+import SaveIcon from '@mui/icons-material/Save';
+import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown';
 import CircularProgress from '@mui/material/CircularProgress';
 import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
-import { transcribeAudio, diarizeTranscription } from '../utils/groqApiClient';
+import { transcribeAudio, diarizeTranscription, correctSpeakerAssignment } from '../utils/groqApiClient';
 import { 
   fetchCallById, 
   fetchTranscription, 
@@ -62,6 +72,13 @@ const CallTranscription = () => {
   const [showAudioUpload, setShowAudioUpload] = useState(false);
   const [showSimpleTranscript, setShowSimpleTranscript] = useState(false);
   const [hasInsights, setHasInsights] = useState(false);
+  
+  // Speaker editing state
+  const [editSpeakersMode, setEditSpeakersMode] = useState(false);
+  const [editedTranscription, setEditedTranscription] = useState(null);
+  const [anchorEl, setAnchorEl] = useState(null);
+  const [selectedSegmentIndex, setSelectedSegmentIndex] = useState(null);
+  const [showSaveConfirmation, setShowSaveConfirmation] = useState(false);
 
   // Computed state to check if we have a valid transcription
   const hasValidTranscription = diarizedTranscription && 
@@ -80,6 +97,28 @@ const CallTranscription = () => {
       setShowSimpleTranscript(false);
     }
   }, [hasValidTranscription, audioFile]);
+  
+  // Clean up resources when component unmounts
+  useEffect(() => {
+    return () => {
+      // Clean up any object URLs we've created
+      if (window._audioObjectUrls) {
+        Object.values(window._audioObjectUrls).forEach(url => {
+          if (url && typeof url === 'string' && url.startsWith('blob:')) {
+            URL.revokeObjectURL(url);
+            console.log('Revoked object URL:', url);
+          }
+        });
+        window._audioObjectUrls = {};
+      }
+      
+      // Also revoke the current audioUrl if it's a blob URL
+      if (audioUrl && typeof audioUrl === 'string' && audioUrl.startsWith('blob:')) {
+        URL.revokeObjectURL(audioUrl);
+        console.log('Revoked current audio URL');
+      }
+    };
+  }, [audioUrl]);
 
   // Force logging for debugging
   useEffect(() => {
@@ -241,17 +280,17 @@ const CallTranscription = () => {
         // Check for existing audio file using the enhanced getCallAudio function
         setProcessingStep('Loading audio file...');
         
-        // First check sessionStorage for a direct audio URL
-        const sessionAudioUrl = sessionStorage.getItem(`audio_url_${callId}`);
+        // First check if we have an Object URL stored for this call
         let audioResult;
         
-        if (sessionAudioUrl) {
-          console.log(`Found audio URL in sessionStorage for call ${callId}`);
-          setAudioUrl(sessionAudioUrl);
+        if (window._audioObjectUrls && window._audioObjectUrls[`audio_url_${callId}`]) {
+          const objectUrl = window._audioObjectUrls[`audio_url_${callId}`];
+          console.log(`Found audio Object URL reference for call ${callId}`);
+          setAudioUrl(objectUrl);
           setAudioFile(new File(["dummy content"], "audio_file.mp3", { type: 'audio/mpeg' }));
-          audioResult = { source: 'sessionStorage', url: sessionAudioUrl, file: true };
+          audioResult = { source: 'objectUrl', url: objectUrl, file: true };
         } else {
-          // If not in sessionStorage, try other methods
+          // If no Object URL, try other methods
           audioResult = await getCallAudio(callId);
         }
         
@@ -394,16 +433,16 @@ const CallTranscription = () => {
         
         console.log(`Call audio metadata saved for call ${callId}`);
         
-        // Store the file itself in localStorage for direct access
-        // Convert file to data URL for storage in sessionStorage
-        const reader = new FileReader();
-        reader.onload = (e) => {
-          const dataUrl = e.target.result;
-          sessionStorage.setItem(`audio_url_${callId}`, dataUrl);
-          console.log(`Audio file saved as data URL in sessionStorage for call ${callId}`);
-        };
-        reader.readAsDataURL(file);
-        console.log(`Audio URL saved to sessionStorage for call ${callId}`);
+        // Don't try to store the entire audio file in sessionStorage - it will exceed the quota
+        // Instead, create an objectURL that will be valid for the current session
+        const audioObjectUrl = URL.createObjectURL(file);
+        setAudioUrl(audioObjectUrl);
+        
+        // Store the URL reference in a variable accessible to the component
+        window._audioObjectUrls = window._audioObjectUrls || {};
+        window._audioObjectUrls[`audio_url_${callId}`] = audioObjectUrl;
+        
+        console.log(`Audio file referenced via Object URL for call ${callId}`);
       } catch (metadataError) {
         console.error('Error saving audio metadata:', metadataError);
       }
@@ -605,6 +644,75 @@ const CallTranscription = () => {
     const seconds = Math.floor(time % 60);
     return `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
   };
+
+  // Speaker editing functions
+  const handleEditSpeakersToggle = () => {
+    // When entering edit mode, create a copy of the current transcription
+    if (!editSpeakersMode) {
+      setEditedTranscription([...diarizedTranscription]);
+    } else {
+      // When exiting edit mode without saving, discard changes
+      setEditedTranscription(null);
+    }
+    setEditSpeakersMode(!editSpeakersMode);
+  };
+
+  const handleSpeakerMenuOpen = (event, segmentIndex) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedSegmentIndex(segmentIndex);
+  };
+
+  const handleSpeakerMenuClose = () => {
+    setAnchorEl(null);
+    setSelectedSegmentIndex(null);
+  };
+
+  const handleSpeakerChange = (newSpeaker) => {
+    // Update the edited transcription with the new speaker for the selected segment
+    const updatedTranscription = [...editedTranscription];
+    updatedTranscription[selectedSegmentIndex] = {
+      ...updatedTranscription[selectedSegmentIndex],
+      speaker: newSpeaker
+    };
+    
+    setEditedTranscription(updatedTranscription);
+    handleSpeakerMenuClose();
+  };
+
+  const handleSaveChanges = async () => {
+    try {
+      setLoading(true);
+      
+      // Save the edited transcription to all storage locations
+      await saveTranscription(callId, editedTranscription);
+      
+      // Update the displayed transcription
+      setDiarizedTranscription(editedTranscription);
+      
+      // Show save confirmation dialog
+      setShowSaveConfirmation(true);
+      
+      // Exit edit mode
+      setEditSpeakersMode(false);
+      setEditedTranscription(null);
+      
+      // Remove insights flag so they will be regenerated
+      localStorage.removeItem(`insights_${callId}`);
+      localStorage.removeItem(`insights_flag_${callId}`);
+      setHasInsights(false);
+      
+      setLoading(false);
+    } catch (error) {
+      console.error('Error saving speaker changes:', error);
+      setError('Failed to save speaker changes');
+      setShowSnackbar(true);
+      setLoading(false);
+    }
+  };
+
+  const handleSaveConfirmationClose = () => {
+    setShowSaveConfirmation(false);
+  };
   
   // Refs for scrolling to active segments
   const transcriptContainerRef = useRef(null);
@@ -790,8 +898,8 @@ const CallTranscription = () => {
             <Chip 
               label={`Outcome: ${callData.outcome}`} 
               color={
-                callData.outcome.toLowerCase() === 'closed' ? 'success' : 
-                callData.outcome.toLowerCase() === 'in-progress' ? 'warning' : 'error'
+                callData.outcome === 'Closed' ? 'success' : 
+                callData.outcome === 'In-progress' ? 'warning' : 'error'
               }
               size="small"
             />
@@ -1384,48 +1492,130 @@ const CallTranscription = () => {
                         letterSpacing: '-0.3px'
                       }}
                     >
-                      Transcript
+                      Transcript {editSpeakersMode && '(Edit Speakers Mode)'}
                     </Typography>
                     
                     {existingTranscription && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                        <Button
-                          variant="contained"
-                          color="secondary"
-                          startIcon={hasInsights ? <VisibilityIcon /> : <AssessmentIcon />}
-                          onClick={() => navigate('/dashboard/call-insights', { state: { callData } })}
-                          sx={{
-                            fontWeight: 600,
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                            '&:hover': { 
-                              boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
-                            },
-                            textTransform: 'none',
-                            borderRadius: '6px',
-                            padding: '6px 12px',
-                            fontSize: '0.85rem',
-                            display: 'inline-flex',
-                            flexShrink: 0
-                          }}
-                        >
-                          {hasInsights ? 'View Insights' : 'Generate Insights'}
-                        </Button>
-                        
-                        <Tooltip title="Transcription saved to project storage">
-                          <Chip 
-                            icon={<CheckCircleIcon />}
-                            label="Saved" 
-                            color="success"
-                            size="small"
-                            sx={{
-                              fontWeight: 500,
-                              px: 1,
-                              '& .MuiChip-icon': {
-                                fontSize: '1rem'
-                              }
-                            }}
-                          />
-                        </Tooltip>
+                      <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 1 }}>
+                        {!editSpeakersMode ? (
+                          <>
+                            <Button
+                              variant="outlined"
+                              color="primary"
+                              startIcon={<EditIcon />}
+                              onClick={handleEditSpeakersToggle}
+                              sx={{
+                                fontWeight: 600,
+                                boxShadow: '0 1px 2px rgba(0,0,0,0.05)',
+                                '&:hover': { 
+                                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                                },
+                                textTransform: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                fontSize: '0.85rem',
+                                display: 'inline-flex',
+                                flexShrink: 0,
+                                width: 'fit-content'
+                              }}
+                            >
+                              Edit Speakers
+                            </Button>
+                            
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                              <Button
+                                variant="contained"
+                                color="secondary"
+                                startIcon={hasInsights ? <VisibilityIcon /> : <AssessmentIcon />}
+                                onClick={() => navigate('/dashboard/call-insights', { state: { callData } })}
+                                sx={{
+                                  fontWeight: 600,
+                                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                  '&:hover': { 
+                                    boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
+                                  },
+                                  textTransform: 'none',
+                                  borderRadius: '6px',
+                                  padding: '6px 12px',
+                                  fontSize: '0.85rem',
+                                  display: 'inline-flex',
+                                  flexShrink: 0
+                                }}
+                              >
+                                {hasInsights ? 'View Insights' : 'Generate Insights'}
+                              </Button>
+
+                              <Tooltip title="Transcription saved to project storage">
+                                <Chip 
+                                  icon={<CheckCircleIcon />}
+                                  label="Saved" 
+                                  color="success"
+                                  size="small"
+                                  sx={{
+                                    fontWeight: 500,
+                                    px: 1,
+                                    '& .MuiChip-icon': {
+                                      fontSize: '1rem'
+                                    }
+                                  }}
+                                />
+                              </Tooltip>
+                            </Box>
+                          </>
+                        ) : (
+                          <>
+                            <Button
+                              variant="outlined"
+                              color="secondary"
+                              onClick={handleEditSpeakersToggle}
+                              sx={{
+                                fontWeight: 600,
+                                '&:hover': { 
+                                  bgcolor: 'rgba(211, 47, 47, 0.04)'
+                                },
+                                textTransform: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                fontSize: '0.85rem',
+                                display: 'inline-flex',
+                                flexShrink: 0,
+                                color: '#d32f2f',
+                                borderColor: '#d32f2f',
+                                width: 'fit-content',
+                                alignSelf: 'flex-end'
+                              }}
+                            >
+                              Cancel
+                            </Button>
+                            
+                            <Button
+                              variant="contained"
+                              color="primary"
+                              startIcon={<SaveIcon />}
+                              onClick={handleSaveChanges}
+                              disabled={loading}
+                              sx={{
+                                fontWeight: 600,
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                                '&:hover': { 
+                                  boxShadow: '0 4px 8px rgba(0,0,0,0.2)',
+                                  bgcolor: 'var(--primary-hover)'
+                                },
+                                textTransform: 'none',
+                                borderRadius: '6px',
+                                padding: '6px 12px',
+                                fontSize: '0.85rem',
+                                display: 'inline-flex',
+                                flexShrink: 0,
+                                bgcolor: 'var(--primary-color)',
+                                width: 'fit-content',
+                                alignSelf: 'flex-end'
+                              }}
+                            >
+                              Save Changes
+                            </Button>
+                          </>
+                        )}
                       </Box>
                     )}
                   </Box>
@@ -1535,17 +1725,28 @@ const CallTranscription = () => {
                             }}
                           >
                             <Box
+                              component={editSpeakersMode ? "button" : "div"}
+                              onClick={editSpeakersMode ? (e) => handleSpeakerMenuOpen(e, index) : undefined}
                               sx={{
-                                bgcolor: segment.speaker === 'Speaker 1' || 
-                                           segment.speaker === 'Agent' || 
-                                           segment.speaker === 'Sales Rep' ||
-                                           (callData && segment.speaker === callData.salesRep?.split(' ')[0])
+                                bgcolor: (editSpeakersMode && editedTranscription ? 
+                                  editedTranscription[index].speaker : segment.speaker) === 'Speaker 1' || 
+                                  (editSpeakersMode && editedTranscription ? 
+                                    editedTranscription[index].speaker : segment.speaker) === 'Agent' || 
+                                  (editSpeakersMode && editedTranscription ? 
+                                    editedTranscription[index].speaker : segment.speaker) === 'Sales Rep' ||
+                                  (callData && (editSpeakersMode && editedTranscription ? 
+                                    editedTranscription[index].speaker : segment.speaker) === callData.salesRep?.split(' ')[0])
                                   ? 'var(--primary-color)' 
-                                  : segment.speaker === 'Speaker 2' || 
-                                    segment.speaker === 'Caller' || 
-                                    segment.speaker === 'Customer' || 
-                                    segment.speaker === 'Client' ||
-                                    (callData && segment.speaker === callData.client?.split(' ')[0])
+                                  : (editSpeakersMode && editedTranscription ? 
+                                    editedTranscription[index].speaker : segment.speaker) === 'Speaker 2' || 
+                                    (editSpeakersMode && editedTranscription ? 
+                                      editedTranscription[index].speaker : segment.speaker) === 'Caller' || 
+                                    (editSpeakersMode && editedTranscription ? 
+                                      editedTranscription[index].speaker : segment.speaker) === 'Customer' || 
+                                    (editSpeakersMode && editedTranscription ? 
+                                      editedTranscription[index].speaker : segment.speaker) === 'Client' ||
+                                    (callData && (editSpeakersMode && editedTranscription ? 
+                                      editedTranscription[index].speaker : segment.speaker) === callData.client?.split(' ')[0])
                                     ? '#E57373' 
                                     : index % 2 === 0 ? 'var(--primary-color)' : '#E57373',
                                 color: 'white',
@@ -1556,17 +1757,44 @@ const CallTranscription = () => {
                                 mb: 1.5,
                                 fontWeight: 600,
                                 fontSize: '0.9rem',
-                                boxShadow: segment.speaker === 'Speaker 1' || 
-                                           segment.speaker === 'Agent' || 
-                                           segment.speaker === 'Sales Rep' || 
-                                           (callData && segment.speaker === callData.salesRep?.split(' ')[0]) || 
-                                           index % 2 === 0
+                                boxShadow: (editSpeakersMode && editedTranscription ? 
+                                  editedTranscription[index].speaker : segment.speaker) === 'Speaker 1' || 
+                                  (editSpeakersMode && editedTranscription ? 
+                                    editedTranscription[index].speaker : segment.speaker) === 'Agent' || 
+                                  (editSpeakersMode && editedTranscription ? 
+                                    editedTranscription[index].speaker : segment.speaker) === 'Sales Rep' || 
+                                  (callData && (editSpeakersMode && editedTranscription ? 
+                                    editedTranscription[index].speaker : segment.speaker) === callData.salesRep?.split(' ')[0]) || 
+                                  index % 2 === 0
                                   ? '0 3px 8px rgba(79, 70, 229, 0.25)' 
                                   : '0 3px 8px rgba(229, 115, 115, 0.25)',
-                                letterSpacing: '0.3px'
+                                letterSpacing: '0.3px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                cursor: editSpeakersMode ? 'pointer' : 'default',
+                                border: 'none',
+                                transition: 'all 0.2s ease',
+                                '&:hover': editSpeakersMode ? {
+                                  transform: 'scale(1.05)',
+                                  boxShadow: (editSpeakersMode && editedTranscription ? 
+                                    editedTranscription[index].speaker : segment.speaker) === 'Speaker 1' || 
+                                    (editSpeakersMode && editedTranscription ? 
+                                      editedTranscription[index].speaker : segment.speaker) === 'Agent' || 
+                                    (editSpeakersMode && editedTranscription ? 
+                                      editedTranscription[index].speaker : segment.speaker) === 'Sales Rep' || 
+                                    (callData && (editSpeakersMode && editedTranscription ? 
+                                      editedTranscription[index].speaker : segment.speaker) === callData.salesRep?.split(' ')[0]) || 
+                                    index % 2 === 0
+                                    ? '0 4px 12px rgba(79, 70, 229, 0.35)' 
+                                    : '0 4px 12px rgba(229, 115, 115, 0.35)'
+                                } : {}
                               }}
                             >
-                              {segment.speaker}
+                              {editSpeakersMode && editedTranscription ? editedTranscription[index].speaker : segment.speaker}
+                              {editSpeakersMode && (
+                                <KeyboardArrowDownIcon fontSize="small" sx={{ ml: 0.5, fontSize: '16px' }} />
+                              )}
                             </Box>
                             <Button
                               size="small"
@@ -1751,6 +1979,100 @@ const CallTranscription = () => {
           )}
         </Paper>
         
+        {/* Speaker selection menu */}
+        <Menu
+          anchorEl={anchorEl}
+          open={Boolean(anchorEl)}
+          onClose={handleSpeakerMenuClose}
+          anchorOrigin={{
+            vertical: 'bottom',
+            horizontal: 'center',
+          }}
+          transformOrigin={{
+            vertical: 'top',
+            horizontal: 'center',
+          }}
+          sx={{
+            '& .MuiPaper-root': {
+              borderRadius: '8px',
+              boxShadow: '0 4px 12px rgba(0,0,0,0.15)',
+              marginTop: '4px',
+              width: '180px'
+            }
+          }}
+        >
+          {/* Sales Rep Option */}
+          <MenuItem 
+            onClick={() => handleSpeakerChange(callData?.salesRep ? callData.salesRep.split(' ')[0] : 'Sales Rep')}
+            sx={{ 
+              py: 1.5,
+              fontWeight: 600,
+              color: 'var(--primary-color)',
+              backgroundColor: editedTranscription && selectedSegmentIndex !== null && 
+                (editedTranscription[selectedSegmentIndex].speaker === (callData?.salesRep ? callData.salesRep.split(' ')[0] : 'Sales Rep') ||
+                 editedTranscription[selectedSegmentIndex].speaker === 'Speaker 1' ||
+                 editedTranscription[selectedSegmentIndex].speaker === 'Sales Rep')
+                ? 'var(--primary-light)' 
+                : 'transparent'
+            }}
+          >
+            {callData?.salesRep ? callData.salesRep.split(' ')[0] : 'Sales Rep'} (Sales Rep)
+          </MenuItem>
+          
+          {/* Customer Option */}
+          <MenuItem 
+            onClick={() => handleSpeakerChange(callData?.client ? callData.client.split(' ')[0] : 'Customer')}
+            sx={{ 
+              py: 1.5,
+              fontWeight: 600,
+              color: '#E57373',
+              backgroundColor: editedTranscription && selectedSegmentIndex !== null && 
+                (editedTranscription[selectedSegmentIndex].speaker === (callData?.client ? callData.client.split(' ')[0] : 'Customer') ||
+                 editedTranscription[selectedSegmentIndex].speaker === 'Speaker 2' ||
+                 editedTranscription[selectedSegmentIndex].speaker === 'Customer' ||
+                 editedTranscription[selectedSegmentIndex].speaker === 'Client')
+                ? '#FFEBEE' 
+                : 'transparent'
+            }}
+          >
+            {callData?.client ? callData.client.split(' ')[0] : 'Customer'} (Customer)
+          </MenuItem>
+        </Menu>
+
+        {/* Save confirmation dialog */}
+        <Dialog
+          open={showSaveConfirmation}
+          onClose={handleSaveConfirmationClose}
+          aria-labelledby="save-dialog-title"
+          aria-describedby="save-dialog-description"
+        >
+          <DialogTitle id="save-dialog-title">
+            Changes Saved Successfully
+          </DialogTitle>
+          <DialogContent>
+            <DialogContentText id="save-dialog-description">
+              Speaker changes have been saved. The transcript will be used to generate new insights.
+              Would you like to view the insights now or continue editing the transcript?
+            </DialogContentText>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleSaveConfirmationClose} color="primary">
+              Continue Editing
+            </Button>
+            <Button 
+              onClick={() => {
+                handleSaveConfirmationClose();
+                navigate('/dashboard/call-insights', { state: { callData } });
+              }} 
+              variant="contained" 
+              color="secondary"
+              startIcon={<AssessmentIcon />}
+            >
+              View Insights
+            </Button>
+          </DialogActions>
+        </Dialog>
+
         <Snackbar 
           open={openSnackbar} 
           autoHideDuration={6000} 
