@@ -15,7 +15,6 @@ const Products = () => {
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [timeframe, setTimeframe] = useState('monthly');
   const [showSidebar, setShowSidebar] = useState(false);
   const [isAddingProduct, setIsAddingProduct] = useState(false);
   const [newProduct, setNewProduct] = useState({
@@ -334,8 +333,8 @@ const Products = () => {
     };
   };
 
-  // Generate the colors for charts
-  const COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#a4de6c', '#d0ed57'];
+  // Generate 5 highly distinct shades of purple
+  const COLORS = ['#c026d3', '#a21caf', '#7e22ce', '#5b21b6', '#3b0764'];
 
   // If no user is logged in, redirect to login page
   if (!user) {
@@ -390,20 +389,6 @@ const Products = () => {
         <div className="products-header">
           <h1>Products</h1>
           <div className="header-actions">
-            <div className="timeframe-filter">
-              <button 
-                className={`filter-btn ${timeframe === 'weekly' ? 'active' : ''}`}
-                onClick={() => setTimeframe('weekly')}
-              >
-                Weekly
-              </button>
-              <button 
-                className={`filter-btn ${timeframe === 'monthly' ? 'active' : ''}`}
-                onClick={() => setTimeframe('monthly')}
-              >
-                Monthly
-              </button>
-            </div>
             {!isSalesRep && (
               <button 
                 className="add-product-btn"
@@ -533,7 +518,7 @@ const Products = () => {
                     <YAxis />
                     <Tooltip formatter={(value) => formatCurrency(value)} />
                     <Legend />
-                    <Bar dataKey="total_revenue" fill="#8884d8" name="Revenue" />
+                    <Bar dataKey="total_revenue" fill="#9333ea" name="Revenue" />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -546,6 +531,9 @@ const Products = () => {
               <div className="pie-chart-container">
                 <ResponsiveContainer width="100%" height={300}>
                   <PieChart>
+                    <text x="50%" y="20" textAnchor="middle" dominantBaseline="middle" fontSize={16} fontWeight="bold">
+                      Product Distribution
+                    </text>
                     <Pie
                       data={topProductsChartData}
                       cx="50%"
@@ -554,12 +542,22 @@ const Products = () => {
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="value"
-                      label={({name, percent}) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      label={false}
                     >
                       {topProductsChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        <Cell key={`cell-${index}`} fill={COLORS[index]} />
                       ))}
                     </Pie>
+                    <Legend 
+                      layout="vertical" 
+                      verticalAlign="middle" 
+                      align="right"
+                      iconSize={10}
+                      wrapperStyle={{
+                        fontSize: '14px',
+                        fontWeight: 500
+                      }}
+                    />
                     <Tooltip formatter={(value, name, props) => [value, props.payload.name]} />
                   </PieChart>
                 </ResponsiveContainer>

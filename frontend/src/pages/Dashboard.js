@@ -217,7 +217,9 @@ const Dashboard = () => {
                           <td className="sn-column">{renderSNColumn(index)}</td>
                           <td className="name-column">
                             <div className="name-cell">
-                              <div className="avatar">{rep.name.charAt(0)}</div>
+                              <div className="avatar">
+                                {rep.name.split(' ').map(word => word[0]).join('')}
+                              </div>
                               <span>{rep.name}</span>
                             </div>
                           </td>

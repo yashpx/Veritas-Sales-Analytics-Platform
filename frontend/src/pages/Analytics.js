@@ -4,7 +4,7 @@ import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow,
   Chip, Card, CardContent, Button, Dialog, DialogTitle,
   DialogContent, DialogActions, TextField, MenuItem, Select, FormControl,
-  InputLabel, Snackbar, Alert
+  InputLabel, Snackbar, Alert, Avatar
 } from '@mui/material';
 import { 
   PieChart, Pie, Cell, LineChart, Line, 
@@ -531,7 +531,8 @@ const ManagerAnalytics = () => {
              name,
              value
            }));
-     
+           console.log('Call Outcomes Data:', callOutcomesData);
+           
            // Get payment method distribution
            const { data: paymentData, error: paymentError } = await supabase
              .from('sales_data')
@@ -586,16 +587,39 @@ const ManagerAnalytics = () => {
        
        // Colors for charts
        const COLORS = ['#4E8AF4', '#4CAF50', '#FF9800', '#E91E63', '#9C27B0'];
-     
+
+       // Custom colors for call outcomes
+       const CALL_OUTCOME_COLORS = {
+         'Closed': '#4CAF50',  // Green for Closed
+         'closed': '#4CAF50',  // Green for Closed (lowercase)
+         'CLOSED': '#4CAF50',  // Green for Closed (uppercase)
+         'In Progress': '#a855f7',  // Lighter purple for In Progress
+         'in progress': '#a855f7',  // Lighter purple for In Progress (lowercase)
+         'IN PROGRESS': '#a855f7',  // Lighter purple for In Progress (uppercase)
+         'In-Progress': '#a855f7',  // Lighter purple for In-Progress (with hyphen)
+         'in-progress': '#a855f7',  // Lighter purple for In-Progress (lowercase with hyphen)
+         'Failed': '#FF0000',  // Red for Failed
+         'failed': '#FF0000',  // Red for Failed (lowercase)
+         'FAILED': '#FF0000',  // Red for Failed (uppercase)
+       };
+
+       // Custom colors for payment methods
+       const PAYMENT_METHOD_COLORS = {
+         'Credit Card': '#9C27B0',  // Purple for Credit Card
+         'Online Payment': '#4E8AF4',  // Blue for Online Payment
+         'online payment': '#4E8AF4',  // Blue for Online Payment (lowercase)
+         'ONLINE PAYMENT': '#4E8AF4',  // Blue for Online Payment (uppercase)
+       };
+
        // Updated getProgressColor function to use purple shades
        const getProgressColor = (percentage) => {
-       if (percentage >= 100) return '#9333ea'; // Dark purple for 100% or more
-       if (percentage >= 75) return '#a855f7';  // Medium purple for 75% or more
-       if (percentage >= 50) return '#a855f7';  // Light purple for 50% or more
-       if (percentage >= 25) return '#a855f7';  // Lighter purple for 25% or more
-        return '#a855f7';                        // Lightest purple for less than 25%
-        };
-     
+         if (percentage >= 100) return '#9333ea'; // Dark purple for 100% or more
+         if (percentage >= 75) return '#a855f7';  // Medium purple for 75% or more
+         if (percentage >= 50) return '#a855f7';  // Light purple for 50% or more
+         if (percentage >= 25) return '#a855f7';  // Lighter purple for 25% or more
+         return '#a855f7';                        // Lightest purple for less than 25%
+       };
+
        if (loading && !dashboardData.overallStats.totalRevenue) {
          return (
            <DashboardLayout>
@@ -819,7 +843,7 @@ const ManagerAnalytics = () => {
                     <Typography
                       variant="h6"
                       fontWeight="bold"
-                      sx={{ mb: 2, color: '#FF9800', fontFamily: 'Inter, sans-serif' }}
+                      sx={{ mb: 2, color: '#000000', fontFamily: 'Inter, sans-serif' }}
                     >
                       Call Outcomes
                     </Typography>
@@ -834,9 +858,24 @@ const ManagerAnalytics = () => {
                           fill="#FF9800"
                           label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                         >
-                          {dashboardData.callStats.callOutcomes.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
+                          {dashboardData.callStats.callOutcomes.map((entry, index) => {
+                            // Debug log for each entry
+                            console.log(`Call outcome entry: ${entry.name}, using color: ${CALL_OUTCOME_COLORS[entry.name] || COLORS[index % COLORS.length]}`);
+                            
+                            // Determine color based on outcome
+                            let color;
+                            if (entry.name.toLowerCase().includes('closed')) {
+                              color = '#4CAF50'; // Green
+                            } else if (entry.name.toLowerCase().includes('progress') || entry.name.toLowerCase().includes('in-progress')) {
+                              color = '#a855f7'; // Lighter purple
+                            } else if (entry.name.toLowerCase().includes('fail')) {
+                              color = '#FF0000'; // Red
+                            } else {
+                              color = COLORS[index % COLORS.length]; // Default color
+                            }
+                            
+                            return <Cell key={`cell-${index}`} fill={color} />;
+                          })}
                         </Pie>
                         <Tooltip formatter={(value) => value} />
                         <Legend />
@@ -854,7 +893,7 @@ const ManagerAnalytics = () => {
                     <Typography
                       variant="h6"
                       fontWeight="bold"
-                      sx={{ mb: 2, color: '#4CAF50', fontFamily: 'Inter, sans-serif' }}
+                      sx={{ mb: 2, color: '#000000', fontFamily: 'Inter, sans-serif' }}
                     >
                       Payment Method Distribution
                     </Typography>
@@ -869,9 +908,22 @@ const ManagerAnalytics = () => {
                           fill="#4CAF50"
                           label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
                         >
-                          {dashboardData.paymentMethodDistribution.map((entry, index) => (
-                            <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                          ))}
+                          {dashboardData.paymentMethodDistribution.map((entry, index) => {
+                            // Debug log for each entry
+                            console.log(`Payment method entry: ${entry.name}, using color: ${PAYMENT_METHOD_COLORS[entry.name] || COLORS[index % COLORS.length]}`);
+                            
+                            // Determine color based on payment method
+                            let color;
+                            if (entry.name.toLowerCase().includes('credit card')) {
+                              color = '#9C27B0'; // Purple
+                            } else if (entry.name.toLowerCase().includes('online')) {
+                              color = '#4E8AF4'; // Blue
+                            } else {
+                              color = COLORS[index % COLORS.length]; // Default color
+                            }
+                            
+                            return <Cell key={`cell-${index}`} fill={color} />;
+                          })}
                         </Pie>
                         <Tooltip formatter={(value) => formatCurrency(value)} />
                         <Legend />
