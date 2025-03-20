@@ -40,38 +40,6 @@ A comprehensive sales management platform that enables sales teams to manage cal
 - AI-powered audio transcription using Groq API
 - Call functionality through Twilio integration
 
-## Project Structure
-
-```
-veritas/
-├── backend/                # Python FastAPI backend
-│   ├── app/
-│   │   ├── api/            # API endpoints
-│   │   ├── auth/           # Authentication logic
-│   │   ├── models/         # Pydantic models
-│   │   └── utils/          # Utility functions
-│   ├── config/             # Configuration settings
-│   ├── .env                # Environment variables (not in git)
-│   ├── .env.example        # Example environment variables
-│   ├── main.py             # FastAPI entry point
-│   └── requirements.txt    # Python dependencies
-│
-└── frontend/               # React frontend
-    ├── public/             # Static files
-    ├── src/
-    │   ├── components/     # Reusable components
-    │   │   ├── auth/       # Authentication components
-    │   │   ├── layout/     # Layout components
-    │   │   └── ui/         # UI components
-    │   ├── context/        # React context (auth)
-    │   ├── pages/          # Page components
-    │   ├── styles/         # Global styles
-    │   ├── utils/          # Utility functions
-    │   ├── App.js          # Main application component
-    │   └── index.js        # React entry point
-    └── package.json        # NPM dependencies
-```
-
 ## Technology Stack
 
 ### Frontend
@@ -129,6 +97,12 @@ veritas/
 5. Start the backend server:
    ```
    uvicorn main:app --reload --port 5000
+   ```
+
+6. Also set up the AI server with the following command:
+   ```
+   /projects/veritas-authentication/insightspg$ ./start_insightspg.sh
+
    ```
 
 ### Frontend Setup
