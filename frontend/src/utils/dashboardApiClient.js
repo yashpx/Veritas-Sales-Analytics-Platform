@@ -47,6 +47,8 @@ export const fetchDashboardData = async (timeframe = 'weekly') => {
     // Set the appropriate start and end dates based on timeframe
     const startDate = timeframe === 'weekly' ? startOfWeek : currentMonthStart;
     const endDate = now;
+    // These variables are needed for potential future use
+    const _ = { currentMonthEnd, previousMonthStart, previousMonthEnd };
     
     // Use Promise.all to run queries in parallel for better performance
     const [

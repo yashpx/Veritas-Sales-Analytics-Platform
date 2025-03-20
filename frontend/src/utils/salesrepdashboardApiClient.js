@@ -45,6 +45,8 @@ export const fetchSalesRepDashboardData = async (salesRepId, timeframe = 'weekly
     // Set the appropriate start and end dates based on timeframe
     const startDate = timeframe === 'weekly' ? startOfWeek : currentMonthStart;
     const endDate = now;
+    // This variable is needed for potential future use
+    const _ = { currentMonthEnd };
     
     // Use Promise.all to run queries in parallel for better performance
     const [

@@ -558,7 +558,7 @@ Here's the call transcript: ${JSON.stringify(transcription)}`
   }
 };
 
-export default {
+const groqApi = {
   transcribeAudio,
   diarizeTranscription,
   correctSpeakerAssignment,
@@ -567,3 +567,5 @@ export default {
   cleanTranscriptWithGroq,
   generateInsights
 };
+
+export default groqApi;

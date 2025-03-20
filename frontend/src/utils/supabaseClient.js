@@ -37,6 +37,90 @@ try {
   // Run the test but don't wait for it
   testConnection();
   
+  // Add a SQL function for inserting call logs if it doesn't exist
+  const createInsertCallLogFunction = async () => {
+    try {
+      const { error } = await supabase.rpc('insert_call_log', {
+        sales_rep_id: 1,
+        customer_id: 1,
+        duration_mins: 1,
+        outcome: 'In-progress'
+      });
+      
+      // If the function exists, no need to create it
+      if (!error || !error.message.includes('does not exist')) {
+        console.log('insert_call_log function already exists');
+        return;
+      }
+      
+      // Create the function using raw SQL
+      const { error: createError } = await supabase.rpc('exec_sql', {
+        sql: `
+          CREATE OR REPLACE FUNCTION public.insert_call_log(
+            sales_rep_id integer,
+            customer_id integer,
+            duration_mins integer,
+            outcome text DEFAULT 'In-progress'::text
+          )
+          RETURNS jsonb
+          LANGUAGE plpgsql
+          SECURITY DEFINER
+          AS $function$
+          DECLARE
+            new_id integer;
+            result jsonb;
+          BEGIN
+            -- Insert the record
+            INSERT INTO public.call_logs(
+              sales_rep_id, 
+              customer_id, 
+              call_date, 
+              duration_minutes, 
+              call_outcome
+            )
+            VALUES(
+              sales_rep_id,
+              customer_id,
+              now(),
+              GREATEST(duration_mins, 1),
+              outcome
+            )
+            RETURNING call_id INTO new_id;
+            
+            -- Return the result
+            result := jsonb_build_object(
+              'success', true,
+              'call_id', new_id
+            );
+            
+            RETURN result;
+          EXCEPTION WHEN OTHERS THEN
+            result := jsonb_build_object(
+              'success', false,
+              'error', SQLERRM
+            );
+            RETURN result;
+          END;
+          $function$;
+          
+          -- Grant public access to the function
+          GRANT EXECUTE ON FUNCTION public.insert_call_log TO public;
+        `
+      });
+      
+      if (createError) {
+        console.error('Failed to create insert_call_log function:', createError);
+      } else {
+        console.log('Created insert_call_log function successfully');
+      }
+    } catch (err) {
+      console.error('Error checking/creating call log function:', err);
+    }
+  };
+  
+  // Don't wait for this to complete
+  createInsertCallLogFunction();
+  
   console.log('Supabase client initialized successfully');
 } catch (err) {
   console.error('Error initializing Supabase client:', err);

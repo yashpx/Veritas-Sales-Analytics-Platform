@@ -8,7 +8,6 @@ CREATE TABLE public.call_logs (
   notes text NULL,
   "Sentiment Result" text NULL,
   transcription text NULL,
-  insights json NULL,
   CONSTRAINT call_logs_pkey PRIMARY KEY (call_id),
   CONSTRAINT call_logs_customer_id_fkey FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
   CONSTRAINT call_logs_sales_rep_id_fkey FOREIGN KEY (sales_rep_id) REFERENCES sales_reps(sales_rep_id),
