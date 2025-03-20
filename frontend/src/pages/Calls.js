@@ -135,8 +135,8 @@ const Calls = () => {
           query = query.eq('sales_rep_id', currentUser.salesRepId);
         }
         
-        // Execute the query
-        let { data: call_logs, error } = await query;
+        // Execute the query and order by call_date in descending order (newest first)
+        let { data: call_logs, error } = await query.order('call_date', { ascending: false });
         
         if (error) {
           throw new Error(`Supabase query error: ${error.message}`);
@@ -256,7 +256,23 @@ const Calls = () => {
           <Table sx={{ tableLayout: 'fixed', width: '100%' }}>
             <TableHead>
               <TableRow>
-                <TableCell width="15%">Date</TableCell>
+                <TableCell width="15%">
+                  <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                    Date
+                    <Box component="span" sx={{ 
+                      ml: 1, 
+                      fontSize: '0.75rem', 
+                      color: 'text.secondary',
+                      bgcolor: 'rgba(0,0,0,0.05)',
+                      px: 1,
+                      py: 0.25,
+                      borderRadius: '4px',
+                      fontWeight: 'bold' 
+                    }}>
+                      Newest First
+                    </Box>
+                  </Box>
+                </TableCell>
                 <TableCell width="18%">Client</TableCell>
                 <TableCell width="17%">Sales Rep</TableCell>
                 <TableCell width="12%">Duration</TableCell>

@@ -95,15 +95,15 @@ const CallInsights = () => {
           </Typography>
           <Typography variant="body1" component="div">
             {typeof content === 'string' ? (
-              content
+              <div style={{ maxWidth: '100%', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{content}</div>
             ) : Array.isArray(content) ? (
-              <ul style={{ paddingLeft: '20px', marginTop: '8px', marginBottom: '8px' }}>
+              <ul style={{ paddingLeft: '20px', marginTop: '8px', marginBottom: '8px', maxWidth: '100%', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                 {content.map((item, index) => (
-                  <li key={index} style={{ marginBottom: '8px' }}>{item}</li>
+                  <li key={index} style={{ marginBottom: '8px', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{item}</li>
                 ))}
               </ul>
             ) : (
-              JSON.stringify(content)
+              <div style={{ maxWidth: '100%', wordBreak: 'break-word', overflowWrap: 'break-word' }}>{JSON.stringify(content)}</div>
             )}
           </Typography>
         </CardContent>
@@ -113,7 +113,7 @@ const CallInsights = () => {
 
   return (
     <DashboardLayout>
-      <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: '100%', overflow: 'hidden' }}>
+      <Box sx={{ p: { xs: 2, sm: 3 }, maxWidth: '100%', overflow: 'hidden', wordBreak: 'break-word' }}>
         {/* Header with back button and title */}
         <Box sx={{ mb: 2 }}>
           <Button
@@ -296,7 +296,7 @@ const CallInsights = () => {
                     <Typography variant="h6" fontWeight="bold" sx={{ mb: 2, color: 'text.primary' }}>
                       Call Summary
                     </Typography>
-                    <Typography variant="body1" sx={{ mb: 3, lineHeight: 1.7 }}>
+                    <Typography variant="body1" sx={{ mb: 3, lineHeight: 1.7, maxWidth: '100%', wordBreak: 'break-word', overflowWrap: 'break-word' }}>
                       {insights.summary || "No summary available"}
                     </Typography>
                     
@@ -349,6 +349,85 @@ const CallInsights = () => {
               </Grid>
             </Grid>
             
+            {/* Advanced Call Analysis Sections */}
+            {(insights.conversational_balance || 
+              insights.objection_handling || 
+              insights.pitch_optimization || 
+              insights.call_to_action) && (
+              <Box sx={{ mt: 4 }}>
+                <Typography variant="h5" fontWeight="bold" sx={{ mb: 3, color: 'text.primary' }}>
+                  Advanced Call Analysis
+                </Typography>
+                <Grid container spacing={3}>
+                  {insights.conversational_balance && (
+                    <Grid item xs={12} md={6}>
+                      {renderSectionCard(
+                        'Conversational Balance', 
+                        insights.conversational_balance, 
+                        <AssessmentIcon />,
+                        '#2196f3'
+                      )}
+                    </Grid>
+                  )}
+                  {insights.objection_handling && (
+                    <Grid item xs={12} md={6}>
+                      {renderSectionCard(
+                        'Objection Handling', 
+                        insights.objection_handling, 
+                        <AssessmentIcon />,
+                        '#9c27b0'
+                      )}
+                    </Grid>
+                  )}
+                  {insights.pitch_optimization && (
+                    <Grid item xs={12} md={6}>
+                      {renderSectionCard(
+                        'Pitch Optimization', 
+                        insights.pitch_optimization, 
+                        <AssessmentIcon />,
+                        '#3f51b5'
+                      )}
+                    </Grid>
+                  )}
+                  {insights.call_to_action && (
+                    <Grid item xs={12} md={6}>
+                      {renderSectionCard(
+                        'Call-to-Action Execution', 
+                        insights.call_to_action, 
+                        <AssessmentIcon />,
+                        '#009688'
+                      )}
+                    </Grid>
+                  )}
+                </Grid>
+              </Box>
+            )}
+            
+            {/* Profanity Check Section */}
+            {insights.profanity_level && (
+              <Box sx={{ mt: 4 }}>
+                <Typography variant="h5" fontWeight="bold" sx={{ mb: 3, color: 'text.primary' }}>
+                  Content Safety Analysis
+                </Typography>
+                <Paper sx={{ p: 3, borderRadius: 2, boxShadow: '0 4px 15px rgba(0,0,0,0.1)', border: '1px solid rgba(0,0,0,0.05)' }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <Typography variant="h6" fontWeight="bold">
+                      Language Analysis
+                    </Typography>
+                    <Chip 
+                      label={insights.profanity_level}
+                      color={
+                        insights.profanity_level.includes('Clean') ? 'success' :
+                        insights.profanity_level.includes('Mild') ? 'warning' :
+                        insights.profanity_level.includes('Moderate') ? 'warning' : 'error'
+                      }
+                      sx={{ fontWeight: 'bold' }}
+                    />
+                  </Box>
+                </Paper>
+              </Box>
+            )}
+            
             {/* Raw data section (hidden in production) */}
             {process.env.NODE_ENV === 'development' && insights.raw_insights && (
               <Box sx={{ mt: 4 }}>
@@ -356,7 +435,7 @@ const CallInsights = () => {
                   Raw Insights Data (Dev Only)
                 </Typography>
                 <Paper sx={{ p: 2, borderRadius: 2, bgcolor: '#f5f5f5', overflowX: 'auto' }}>
-                  <pre style={{ margin: 0, fontSize: '0.8rem' }}>
+                  <pre style={{ margin: 0, fontSize: '0.8rem', maxWidth: '100%', overflowX: 'auto', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
                     {JSON.stringify(insights.raw_insights, null, 2)}
                   </pre>
                 </Paper>

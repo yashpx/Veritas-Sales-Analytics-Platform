@@ -60,6 +60,7 @@ const CallTranscription = () => {
   const [existingTranscription, setExistingTranscription] = useState(false);
   const [showTranscriptionUpload, setShowTranscriptionUpload] = useState(false);
   const [showAudioUpload, setShowAudioUpload] = useState(false);
+  const [showSimpleTranscript, setShowSimpleTranscript] = useState(false);
 
   // Computed state to check if we have a valid transcription
   const hasValidTranscription = diarizedTranscription && 
@@ -69,9 +70,16 @@ const CallTranscription = () => {
   // Flag to determine when to show the Transcribe button
   const showTranscribeButton = audioFile && !hasValidTranscription && !loading;
   
-  // Flag to determine when to show transcript without audio features
-  const showSimpleTranscript = hasValidTranscription && !audioFile;
-  
+  // Update showSimpleTranscript state based on conditions
+  useEffect(() => {
+    // Set showSimpleTranscript when we have a valid transcription but no audio
+    if (hasValidTranscription && !audioFile) {
+      setShowSimpleTranscript(true);
+    } else {
+      setShowSimpleTranscript(false);
+    }
+  }, [hasValidTranscription, audioFile]);
+
   // Force logging for debugging
   useEffect(() => {
     console.log("Simple transcript view status:", {

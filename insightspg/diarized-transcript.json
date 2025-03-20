@@ -2,327 +2,147 @@
   "transcript": [
     {
       "speaker": "Speaker 1",
-      "text": "Agent: Hey Colin, Mark Wachak calling. Did I catch you at a bad time there?",
+      "text": "Agent: Hello, Hi, is this Mr. Sharma?",
       "start": 0,
       "end": 5
     },
     {
       "speaker": "Speaker 1",
-      "text": "Caller: Yeah, I'm a little caught up with some things right now.",
+      "text": "Caller: Yes, speaking.",
       "start": 5,
       "end": 10
     },
     {
       "speaker": "Speaker 1",
-      "text": "Agent: Okay, well, fair enough. Would it be okay if I took 30 seconds, told you why I called,",
+      "text": "Agent: Yeah, hi, this is Ravi from ABC Solutions.",
       "start": 10,
       "end": 15
     },
     {
       "speaker": "Speaker 1",
-      "text": "Agent: and if after it doesn't make sense, we could just hang up? Does that sound fair?",
+      "text": "Agent: Do you have a minute?",
       "start": 15,
       "end": 20
     },
     {
       "speaker": "Speaker 1",
-      "text": "Caller: Yeah, that's alright.",
+      "text": "Caller: What's this about?",
       "start": 20,
       "end": 25
     },
     {
       "speaker": "Speaker 1",
-      "text": "Agent: Okay, great. So, I'm a sales strategist who works with mid-sized companies to create a game plan for dramatically increasing sales.",
+      "text": "Agent: Well, we sell software.",
       "start": 25,
       "end": 30
     },
     {
       "speaker": "Speaker 1",
-      "text": "Agent: and my clients typically come to me when they're losing sales to low-cost competitors.",
+      "text": "Agent: I mean, we are an IT solutions company and we thought you might be interested.",
       "start": 30,
       "end": 35
     },
     {
       "speaker": "Speaker 1",
-      "text": "Agent: Their teams are inconsistently hitting sales targets",
+      "text": "Agent: Are you looking to buy anything?",
       "start": 35,
       "end": 40
     },
     {
       "speaker": "Speaker 1",
-      "text": "Agent: or finally they're just frustrated with the lack of results from their existing sales team.",
+      "text": "Caller: Not really.",
       "start": 40,
       "end": 45
     },
     {
       "speaker": "Speaker 1",
-      "text": "Agent: Any of those issues ring true to you?",
+      "text": "Caller: I'm busy right now, actually.",
       "start": 45,
       "end": 50
     },
     {
       "speaker": "Speaker 1",
-      "text": "Caller: Yeah, actually not hitting sales goals has kind of been a problem for my company recently.",
+      "text": "Agent: Oh, okay.",
       "start": 50,
       "end": 55
     },
     {
       "speaker": "Speaker 1",
-      "text": "Agent: Tell me just a little bit more about that.",
+      "text": "Agent: But maybe, I mean, our product could save you money.",
       "start": 55,
       "end": 60
     },
     {
       "speaker": "Speaker 1",
-      "text": "Caller: Well, you know, we have about 20 to 25 agents in my office,",
+      "text": "Caller: Probably.",
       "start": 60,
       "end": 65
     },
     {
       "speaker": "Speaker 1",
-      "text": "Caller: and it just seems like we've been losing a lot of these big condo sales to our competitors recently.",
+      "text": "Agent: We could set a demo or something.",
       "start": 65,
       "end": 70
     },
     {
       "speaker": "Speaker 1",
-      "text": "Caller: We're not moving quick enough.",
+      "text": "Caller: What exactly does your product do?",
       "start": 70,
       "end": 75
     },
     {
       "speaker": "Speaker 1",
-      "text": "Caller: When we are showing the places, we seem to be just somehow not closing the sales.",
+      "text": "Agent: Well, it does a lot of things.",
       "start": 75,
       "end": 80
     },
     {
       "speaker": "Speaker 1",
-      "text": "Caller: I haven't been able to figure out what the real issues are, but we're definitely losing some business.",
+      "text": "Agent: Helps with management, I think, and analytics.",
       "start": 80,
       "end": 85
     },
     {
       "speaker": "Speaker 1",
-      "text": "Caller: I mean, what have you done to fix this?",
+      "text": "Agent: Actually, I'm pretty new here, so I don't know all the details yet.",
       "start": 85,
       "end": 90
     },
     {
       "speaker": "Speaker 1",
-      "text": "Caller: You know, I've had some chats with my bigger sales guys to see what the problems are that they seem to think.",
+      "text": "Caller: Look, this isn't a good time.",
       "start": 90,
       "end": 95
     },
     {
       "speaker": "Speaker 1",
-      "text": "Caller: You know, why aren't they closing these sales compared to what they were doing six months ago and a year ago.",
+      "text": "Caller: Maybe another time.",
       "start": 95,
       "end": 100
     },
     {
       "speaker": "Speaker 1",
-      "text": "Caller: Again, we haven't really been able to put our finger on something.",
+      "text": "Caller: sure I guess",
       "start": 100,
       "end": 105
     },
     {
       "speaker": "Speaker 1",
-      "text": "Caller: The market is great right now.",
+      "text": "Caller: can I call you tomorrow",
       "start": 105,
       "end": 110
     },
     {
       "speaker": "Speaker 1",
-      "text": "Caller: There's places that are selling in a day to two days after they go on the market.",
+      "text": "Caller: I'll call you if I need something",
       "start": 110,
       "end": 115
     },
     {
       "speaker": "Speaker 1",
-      "text": "Caller: And we just not getting those places We having people come to us People want to buy condos They want to move quickly and we just losing out on a lot of great places It a really common issue I hear",
+      "text": "Caller: bye",
       "start": 115,
       "end": 120
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Agent: What would you say this issue is costing you and your organization?",
-      "start": 120,
-      "end": 125
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Caller: I'd have to say, I'd probably say around two and a half to three million.",
-      "start": 125,
-      "end": 130
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Agent: Okay. Well, Colin, can I make a recommendation? Yeah, sure.",
-      "start": 130,
-      "end": 135
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Agent: Why don't we set up an appointment and get together face-to-face?",
-      "start": 135,
-      "end": 140
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Agent: I'd say it takes about 60 minutes or so, and we can talk this further.",
-      "start": 140,
-      "end": 145
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Agent: I think there are some ideas that I could share with you to really help you solve this challenge.",
-      "start": 145,
-      "end": 150
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Agent: I mean, does that make any sense to you?",
-      "start": 150,
-      "end": 155
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Caller: Yeah, I'd be willing to set up a meeting.",
-      "start": 155,
-      "end": 160
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Agent: Okay, great.",
-      "start": 160,
-      "end": 165
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Agent: So what works for you next week?",
-      "start": 165,
-      "end": 170
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Caller: Next week, I think I'm pretty busy Monday and Tuesday, but I could do like a Wednesday afternoon or Thursday morning.",
-      "start": 170,
-      "end": 175
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Agent: Okay.",
-      "start": 175,
-      "end": 180
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Agent: Looking at my calendar, Wednesday afternoon is fine with me.",
-      "start": 180,
-      "end": 185
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Agent: So what's best for you Wednesday afternoon?",
-      "start": 185,
-      "end": 190
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Caller: Hold on.",
-      "start": 190,
-      "end": 195
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Caller: I'm just pulling up my calendar.",
-      "start": 195,
-      "end": 200
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Caller: Anytime after 2 p.m.",
-      "start": 200,
-      "end": 205
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Agent: Okay.",
-      "start": 205,
-      "end": 210
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Agent: I can actually make 2.30 work.",
-      "start": 210,
-      "end": 215
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Caller: That's perfect.",
-      "start": 215,
-      "end": 220
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Agent: Okay.",
-      "start": 220,
-      "end": 225
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Agent: Okay, and so the address for your office, just to confirm, is 8 Broadway Street in Boston, right?",
-      "start": 225,
-      "end": 230
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Caller: That's correct.",
-      "start": 230,
-      "end": 235
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Agent: Okay, great.",
-      "start": 235,
-      "end": 240
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Agent: And just before I hang up, is there anyone else that you would want to include in this conversation",
-      "start": 240,
-      "end": 245
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Agent: who might be involved in this kind of a decision?",
-      "start": 245,
-      "end": 250
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Caller: No, really just I'm the decision maker.",
-      "start": 250,
-      "end": 255
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Caller: So I think there's nobody that I can think of that I'd want to bring along.",
-      "start": 255,
-      "end": 260
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Agent: okay terrific well then I will see you at your office and we will discuss this",
-      "start": 260,
-      "end": 265
-    },
-    {
-      "speaker": "Speaker 1",
-      "text": "Agent: a little bit further then great thanks for the call thank you",
-      "start": 265,
-      "end": 270
     }
   ]
 }

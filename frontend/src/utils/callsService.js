@@ -31,8 +31,8 @@ export const fetchCallLogs = async (user, authType) => {
       query = query.eq('sales_rep_id', user.salesRepId);
     }
     
-    // Execute the query
-    let { data: call_logs, error } = await query;
+    // Execute the query and order by call_date in descending order (newest first)
+    let { data: call_logs, error } = await query.order('call_date', { ascending: false });
     
     console.log('Call logs query result:', { 
       success: !error, 

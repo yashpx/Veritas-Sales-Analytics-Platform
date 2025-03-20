@@ -101,7 +101,7 @@ export const fetchSalesRepDashboardData = async (salesRepId, timeframe = 'weekly
         .gte('call_date', startDate.toISOString())
         .lt('call_date', endDate.toISOString()),
         
-      // Get KPI data for the rep
+      // Get KPI data for the rep - using order and limit instead of single() to avoid errors
       salesRepDashboardClient
         .from('sales_kpi')
         .select('*')
@@ -110,7 +110,8 @@ export const fetchSalesRepDashboardData = async (salesRepId, timeframe = 'weekly
           ? new Date(currentYear, currentMonth, 1).toISOString().split('T')[0] 
           : new Date(currentYear, currentMonth, 1).toISOString().split('T')[0])
         .lte('month', new Date(currentYear, currentMonth + 1, 0).toISOString().split('T')[0])
-        .single(),
+        .order('month', { ascending: false })
+        .limit(1),
       
       // Get recent calls (5 most recent)
       salesRepDashboardClient
@@ -186,6 +187,7 @@ export const fetchSalesRepDashboardData = async (salesRepId, timeframe = 'weekly
     ].filter(item => item.error);
     
     if (errors.length > 0) {
+      console.error('Query errors:', errors);
       throw new Error(`Database query errors: ${errors.map(e => `${e.name}: ${e.error.message}`).join(', ')}`);
     }
     
@@ -198,7 +200,8 @@ export const fetchSalesRepDashboardData = async (salesRepId, timeframe = 'weekly
     const closedSales = closedSalesResult.data || [];
     const minutesData = minutesDataResult.data || [];
     const pendingSales = pendingSalesResult.data || [];
-    const kpiData = kpiDataResult.data || {};
+    // Process KPI data - get the first item if it exists, or default to empty object
+    const kpiData = kpiDataResult.data && kpiDataResult.data.length > 0 ? kpiDataResult.data[0] : {};
     const recentCallsData = recentCallsResult.data || [];
     const salesData = salesResult.data || [];
     const currentSentimentData = currentSentimentResult.data || [];
