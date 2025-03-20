@@ -1,80 +1,82 @@
+/* Base styles for the analytics dashboard */
 body {
-    background-color: #f5f7fb;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  background-color: #f5f7fb;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.MuiPaper-root {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
+  transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+}
+
+.MuiPaper-root:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08) !important;
+}
+
+.MuiTableCell-head {
+  font-weight: 600 !important;
+  color: #6c757d !important;
+  font-size: 0.8rem !important;
+  text-transform: uppercase; 
+  letter-spacing: 0.5px;
+}
+
+.MuiTableCell-body {
+  font-size: 0.9rem !important;
+  padding: 16px !important;
+}
+
+.MuiChip-root {
+  font-weight: 500;
+  font-size: 0.75rem;
+}
+
+.recharts-default-tooltip {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border: none !important;
+  border-radius: 8px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
+  padding: 10px 14px !important;
+}
+
+.recharts-tooltip-label {
+  font-weight: 600 !important;
+  margin-bottom: 5px !important;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #c1c1c1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #a8a8a8;
+}
+
+/* Responsive font sizes */
+@media (max-width: 600px) {
+  .MuiTypography-h5 {
+    font-size: 1.25rem !important;
   }
   
-  .MuiPaper-root {
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05) !important;
-    transition: transform 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+  .MuiTypography-h6 {
+    font-size: 1.1rem !important;
   }
-  
-  .MuiPaper-root:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08) !important;
-  }
-  
-  .MuiTableCell-head {
-    font-weight: 600 !important;
-    color: #6c757d !important;
-    font-size: 0.8rem !important;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-  }
-  
-  .MuiTableCell-body {
-    font-size: 0.9rem !important;
-    padding: 16px !important;
-  }
-  
-  .MuiChip-root {
-    font-weight: 500;
-    font-size: 0.75rem;
-  }
-  
-  .recharts-default-tooltip {
-    background-color: rgba(255, 255, 255, 0.95) !important;
-    border: none !important;
-    border-radius: 8px !important;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1) !important;
-    padding: 10px 14px !important;
-  }
-  
-  .recharts-tooltip-label {
-    font-weight: 600 !important;
-    margin-bottom: 5px !important;
-  }
-  
-  /* Custom scrollbar */
-  ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-  
-  ::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
-  }
-  
-  ::-webkit-scrollbar-thumb {
-    background: #c1c1c1;
-    border-radius: 4px;
-  }
-  
-  ::-webkit-scrollbar-thumb:hover {
-    background: #a8a8a8;
-  }
-  
-  /* Responsive font sizes */
-  @media (max-width: 600px) {
-    .MuiTypography-h5 {
-      font-size: 1.25rem !important;
-    }
-    
-    .MuiTypography-h6 {
-      font-size: 1.1rem !important;
-    }
-  }
-  /* Dashboard Layout Styles */
+}
+
+/* Dashboard Layout Styles */
 .dashboard-container {
   min-height: 100vh;
   background-color: #f5f7fa;
@@ -112,11 +114,18 @@ body {
   transition: width 0.5s ease-in-out;
 }
 
+/* Updated: KPI progress colors - Using purple shades (#9333ea) */
+.kpiProgress {
+  height: 10px;
+  border-radius: 5px;
+  transition: width 1s ease-in-out;
+}
+
 /* Avatar styles */
 .manager-avatar {
-  background: linear-gradient(45deg, #4e8af4, #1a73e8);
+  background: linear-gradient(45deg, #9333ea, #7c3aed);
   font-weight: bold;
-  box-shadow: 0 4px 8px rgba(26, 115, 232, 0.3);
+  box-shadow: 0 4px 8px rgba(147, 51, 234, 0.3);
 }
 
 /* Table Styles */
@@ -182,7 +191,7 @@ body {
   .chart-container {
     height: 200px;
   }
-  
+
   .kpi-card {
     padding: 16px;
   }
@@ -207,7 +216,7 @@ body {
   border-radius: 4px;
 }
 
-/* Custom styles for recharts */
+/* Enhanced tooltip styles for all charts */
 .recharts-tooltip-wrapper {
   background-color: rgba(255, 255, 255, 0.96) !important;
   border-radius: 8px !important;
@@ -228,35 +237,54 @@ body {
   margin-bottom: 16px;
 }
 
-/* Button styles */
+/* Button styles - UPDATED with #9333ea shades */
 .primary-button {
-  background-color: #1a73e8;
+  background-color: #9333ea;
   color: white;
   border-radius: 8px;
   padding: 8px 16px;
   font-weight: 500;
   text-transform: none;
-  box-shadow: 0 2px 8px rgba(26, 115, 232, 0.3);
+  box-shadow: 0 2px 8px rgba(147, 51, 234, 0.3);
   transition: background-color 0.2s ease;
 }
 
 .primary-button:hover {
-  background-color: #0d62c9;
+  background-color: #7c3aed;
 }
 
 .accent-button {
-  background-color: #E91E63;
+  background-color: #9333ea;
   color: white;
   border-radius: 8px;
   padding: 8px 16px;
   font-weight: 500;
   text-transform: none;
-  box-shadow: 0 2px 8px rgba(233, 30, 99, 0.3);
+  box-shadow: 0 2px 8px rgba(147, 51, 234, 0.3);
   transition: background-color 0.2s ease;
 }
 
 .accent-button:hover {
-  background-color: #C2185B;
+  background-color: #7c3aed;
+}
+
+/* Special button styling for the KPI add button with updated colors */
+.kpiAddButton {
+  font-size: 0.75rem !important;
+  padding: 4px 8px !important;
+  height: 28px !important;
+  min-width: auto !important;
+  margin-left: auto !important;
+  text-transform: none !important;
+  border-radius: 6px !important;
+  background-color: #9333ea !important;
+  box-shadow: 0 2px 5px rgba(147, 51, 234, 0.3) !important;
+}
+
+.kpiAddButton:hover {
+  background-color: #7c3aed !important;
+  box-shadow: 0 3px 8px rgba(147, 51, 234, 0.4) !important;
+  transform: translateY(-1px);
 }
 
 /* Empty state styles */
@@ -268,26 +296,56 @@ body {
 
 /* Dialog styles */
 .dialog-title {
-  color: #1a73e8;
+  color: #9333ea;
   font-weight: 500;
 }
 
-/* Custom scrollbar */
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+/* Enhanced area chart styles */
+.recharts-area-curve {
+  filter: drop-shadow(0px 4px 8px rgba(147, 51, 234, 0.3));
 }
 
-::-webkit-scrollbar-track {
-  background: #f1f1f1;
-  border-radius: 10px;
+.recharts-cartesian-axis-tick-value {
+  font-size: 12px;
+  font-weight: 500;
+  fill: #666;
 }
 
-::-webkit-scrollbar-thumb {
-  background: #c1c1c1;
-  border-radius: 10px;
+/* Function to determine color based on percentage - UPDATED with purple shades */
+.progress-green {
+  background-color: #9333ea; /* 100% */
+}
+.progress-light-green {
+  background-color: #a855f7; /* 75% */
+}
+.progress-yellow {
+  background-color: #c084fc; /* 50% */
+}
+.progress-orange {
+  background-color: #d8b4fe; /* 25% */
+}
+.progress-red {
+  background-color: #e9d5ff; /* <25% */
 }
 
-::-webkit-scrollbar-thumb:hover {
-  background: #a8a8a8;
+/* Chart colors for all charts - UPDATED with purple shades */
+.chart-color-1 {
+  fill: #9333ea;
+  stroke: #9333ea;
+}
+.chart-color-2 {
+  fill: #7c3aed;
+  stroke: #7c3aed;
+}
+.chart-color-3 {
+  fill: #a855f7;
+  stroke: #a855f7;
+}
+.chart-color-4 {
+  fill: #c084fc;
+  stroke: #c084fc;
+}
+.chart-color-5 {
+  fill: #d8b4fe;
+  stroke: #d8b4fe;
 }
