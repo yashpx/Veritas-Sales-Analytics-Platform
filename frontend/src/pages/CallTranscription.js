@@ -19,6 +19,7 @@ import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import CloudUploadIcon from '@mui/icons-material/CloudUpload';
 import DownloadIcon from '@mui/icons-material/Download';
 import AssessmentIcon from '@mui/icons-material/Assessment';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import CircularProgress from '@mui/material/CircularProgress';
 import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
@@ -30,7 +31,6 @@ import {
   saveAudioFile, 
   getCallAudio 
 } from '../utils/callsService';
-import { cleanTranscriptWithGroq } from '../utils/groqApiClient';
 
 const CallTranscription = () => {
   const { user } = useAuth();
@@ -61,6 +61,7 @@ const CallTranscription = () => {
   const [showTranscriptionUpload, setShowTranscriptionUpload] = useState(false);
   const [showAudioUpload, setShowAudioUpload] = useState(false);
   const [showSimpleTranscript, setShowSimpleTranscript] = useState(false);
+  const [hasInsights, setHasInsights] = useState(false);
 
   // Computed state to check if we have a valid transcription
   const hasValidTranscription = diarizedTranscription && 
@@ -173,6 +174,20 @@ const CallTranscription = () => {
           setCallData(fetchedCall);
         }
         
+        // Check if insights already exist for this call
+        const cachedInsights = localStorage.getItem(`insights_${callId}`);
+        if (cachedInsights) {
+          setHasInsights(true);
+          console.log(`Found cached insights in localStorage for call ${callId}`);
+        } else {
+          // Check if insights exist in Supabase by checking local storage flag
+          const insightsFlag = localStorage.getItem(`insights_flag_${callId}`);
+          if (insightsFlag === 'true') {
+            setHasInsights(true);
+            console.log(`Found insights flag for call ${callId}`);
+          }
+        }
+        
         // Check for transcription metadata first (indicates a transcription exists in database)
         const transcriptionMetadata = localStorage.getItem(`call_${callId}_transcription_metadata`);
         let hasTranscriptionMetadata = false;
@@ -198,8 +213,7 @@ const CallTranscription = () => {
           // Set transcription flag in localStorage
           localStorage.setItem(`transcription_flag_${callId}`, 'true');
           
-          setSuccess("Existing transcription loaded successfully");
-          setShowSnackbar(true);
+          // No success message needed
           // Don't show upload panels if we have a valid transcription
           setShowTranscriptionUpload(false);
           
@@ -215,8 +229,7 @@ const CallTranscription = () => {
             end_time: 1
           }]);
           setExistingTranscription(true);
-          setSuccess("Transcription record found. Loading transcription data...");
-          setShowSnackbar(true);
+          // No success message needed
           setShowTranscriptionUpload(true); // Show upload option since we need the content
         } else {
           // No transcription found
@@ -252,20 +265,11 @@ const CallTranscription = () => {
           if (audioResult.file) {
             setAudioFile(audioResult.file);
             
-            // If we have both audio and transcription, set a more comprehensive success message
-            if (existingTranscript && Array.isArray(existingTranscript) && existingTranscript.length > 0) {
-              setSuccess(`Call loaded with audio from ${audioResult.source} and existing transcription`);
-            } else {
-              setSuccess(`Audio file loaded from ${audioResult.source}`);
-            }
-            
-            setShowSnackbar(true);
+            // No success message needed for audio file loading
           } else if (audioResult.needsLoading) {
             // We have a reference to a file in project storage but need to load it
             console.log(`Audio file reference found at ${audioResult.path}, will need manual loading`);
             setShowAudioUpload(true);
-            setSuccess("Audio file reference found. Please select the file.");
-            setShowSnackbar(true);
           }
         } else {
           // No audio found in any storage location
@@ -404,16 +408,8 @@ const CallTranscription = () => {
         console.error('Error saving audio metadata:', metadataError);
       }
       
-      if (result.success) {
-        if (hasTranscriptionFlag) {
-          setSuccess("Audio file saved to project storage. This call already has a transcription.");
-        } else {
-          setSuccess("Audio file saved to your downloads folder and project storage");
-        }
-      } else {
-        setSuccess("Audio file saved to your downloads folder for later use");
-      }
-      setShowSnackbar(true);
+      // No success message needed
+      // Don't show snackbar
     } catch (error) {
       console.error('Error saving audio file:', error);
       setError("Error saving audio file. Download created as fallback.");
@@ -463,8 +459,7 @@ const CallTranscription = () => {
           // Set the processed data to state
           setDiarizedTranscription(processedData);
           setExistingTranscription(true);
-          setSuccess("Transcription file loaded successfully");
-          setShowSnackbar(true);
+          // No success message needed
           setShowTranscriptionUpload(false);
         } catch (error) {
           console.error('Error parsing JSON file:', error);
@@ -521,7 +516,25 @@ const CallTranscription = () => {
       
       // Step 2: Diarize the transcription using Groq's LLM
       setProcessingStep('Identifying speakers...');
-      const diarizedResult = await diarizeTranscription(transcriptionResult);
+      
+      // Store call data in localStorage for reference by other components
+      if (callData) {
+        try {
+          localStorage.setItem(`call_data_${callId}`, JSON.stringify({
+            salesRep: callData.salesRep,
+            client: callData.client,
+            date: callData.date,
+            duration: callData.duration,
+            outcome: callData.outcome
+          }));
+          console.log(`Call data saved to localStorage for call ${callId}`);
+        } catch (e) {
+          console.warn('Error saving call data to localStorage:', e);
+        }
+      }
+      
+      // Pass callData to diarization function to get real names in transcript
+      const diarizedResult = await diarizeTranscription(transcriptionResult, callData);
       
       // The diarizeTranscription function now handles parsing and validation
       // and always returns an array
@@ -541,7 +554,7 @@ const CallTranscription = () => {
         transcriptionLength: diarizedResult.length
       });
       
-      setSuccess("Transcription created successfully! It has been saved to your downloads folder and project storage.");
+      setSuccess("Transcription created successfully!");
       setShowSnackbar(true);
       setLoading(false);
       setExistingTranscription(true);
@@ -689,8 +702,7 @@ const CallTranscription = () => {
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
       
-      setSuccess("Transcript downloaded successfully");
-      setShowSnackbar(true);
+      // No success message needed for downloads
     } catch (error) {
       console.error('Error downloading transcript:', error);
       setError("Failed to download transcript");
@@ -909,42 +921,6 @@ const CallTranscription = () => {
                 
                 <Box sx={{ display: 'flex', gap: 2 }}>
                   <Button
-                    variant="contained"
-                    color="warning"
-                    onClick={async () => {
-                      try {
-                        setLoading(true);
-                        setProcessingStep('Cleaning transcription format...');
-                        
-                        // Call the Groq function to clean the transcript
-                        const cleanedTranscript = await cleanTranscriptWithGroq(diarizedTranscription);
-                        
-                        // Update the state with cleaned transcript
-                        setDiarizedTranscription(cleanedTranscript);
-                        
-                        // Save the cleaned transcript
-                        await saveTranscription(callId, cleanedTranscript);
-                        
-                        setSuccess("Transcription cleaned and reformatted successfully");
-                        setShowSnackbar(true);
-                      } catch (error) {
-                        console.error('Error cleaning transcript:', error);
-                        setError("Failed to clean transcript format");
-                        setShowSnackbar(true);
-                      } finally {
-                        setLoading(false);
-                      }
-                    }}
-                    sx={{ 
-                      textTransform: 'none',
-                      fontWeight: 600
-                    }}
-                    disabled={loading}
-                  >
-                    Clean Messy Transcript
-                  </Button>
-                  
-                  <Button
                     component="label"
                     variant="outlined"
                     size="small"
@@ -1006,66 +982,24 @@ const CallTranscription = () => {
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                     <Button
                       variant="contained"
-                      color="warning"
-                      size="large"
-                      onClick={async () => {
-                        try {
-                          setLoading(true);
-                          setProcessingStep('Cleaning transcription format...');
-                          
-                          // Call the Groq function to clean the transcript
-                          const cleanedTranscript = await cleanTranscriptWithGroq(diarizedTranscription);
-                          
-                          // Update the state with cleaned transcript
-                          setDiarizedTranscription(cleanedTranscript);
-                          
-                          // Save the cleaned transcript
-                          await saveTranscription(callId, cleanedTranscript);
-                          
-                          setSuccess("Transcription cleaned and reformatted successfully");
-                          setShowSnackbar(true);
-                        } catch (error) {
-                          console.error('Error cleaning transcript:', error);
-                          setError("Failed to clean transcript format");
-                          setShowSnackbar(true);
-                        } finally {
-                          setLoading(false);
-                        }
-                      }}
+                      color="secondary"
+                      startIcon={hasInsights ? <VisibilityIcon /> : <AssessmentIcon />}
+                      onClick={() => navigate('/dashboard/call-insights', { state: { callData } })}
                       sx={{
-                        textTransform: 'none',
                         fontWeight: 600,
-                        mr: 1,
-                        py: 1.5,
-                        px: 2
-                      }}
-                      disabled={loading}
-                    >
-                      Clean Format
-                    </Button>
-                    
-                    <Button
-                      variant="contained"
-                      startIcon={<DownloadIcon />}
-                      onClick={handleDownloadTranscript}
-                      sx={{
-                        bgcolor: 'var(--primary-color)',
-                        fontWeight: 500,
                         boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
                         '&:hover': { 
-                          bgcolor: 'var(--primary-hover)', 
-                          boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
+                          boxShadow: '0 4px 8px rgba(0,0,0,0.2)'
                         },
                         textTransform: 'none',
                         borderRadius: '6px',
                         padding: '6px 12px',
                         fontSize: '0.85rem',
-                        width: 'auto',
                         display: 'inline-flex',
                         flexShrink: 0
                       }}
                     >
-                      Download
+                      {hasInsights ? 'View Insights' : 'Generate Insights'}
                     </Button>
                     
                     <Tooltip title="Transcription saved to project storage">
@@ -1128,9 +1062,16 @@ const CallTranscription = () => {
                       >
                         <Box
                           sx={{
-                            bgcolor: segment.speaker === 'Speaker 1' || segment.speaker === 'Agent' || segment.speaker === 'Sales Rep'
+                            bgcolor: segment.speaker === 'Speaker 1' || 
+                                     segment.speaker === 'Agent' || 
+                                     segment.speaker === 'Sales Rep' ||
+                                     (callData && segment.speaker === callData.salesRep?.split(' ')[0])
                               ? 'var(--primary-color)' 
-                              : segment.speaker === 'Speaker 2' || segment.speaker === 'Caller' || segment.speaker === 'Customer' || segment.speaker === 'Client'
+                              : segment.speaker === 'Speaker 2' || 
+                                segment.speaker === 'Caller' || 
+                                segment.speaker === 'Customer' || 
+                                segment.speaker === 'Client' ||
+                                (callData && segment.speaker === callData.client?.split(' ')[0])
                                 ? '#E57373' 
                                 : index % 2 === 0 ? 'var(--primary-color)' : '#E57373',
                             color: 'white',
@@ -1140,7 +1081,11 @@ const CallTranscription = () => {
                             borderRadius: '8px',
                             fontWeight: 600,
                             fontSize: '0.9rem',
-                            boxShadow: segment.speaker === 'Speaker 1' || segment.speaker === 'Agent' || segment.speaker === 'Sales Rep' || index % 2 === 0
+                            boxShadow: segment.speaker === 'Speaker 1' || 
+                                     segment.speaker === 'Agent' || 
+                                     segment.speaker === 'Sales Rep' || 
+                                     (callData && segment.speaker === callData.salesRep?.split(' ')[0]) || 
+                                     index % 2 === 0
                               ? '0 3px 8px rgba(79, 70, 229, 0.25)' 
                               : '0 3px 8px rgba(229, 115, 115, 0.25)',
                             letterSpacing: '0.3px'
@@ -1443,11 +1388,11 @@ const CallTranscription = () => {
                     </Typography>
                     
                     {existingTranscription && (
-                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
                         <Button
                           variant="contained"
                           color="secondary"
-                          startIcon={<AssessmentIcon />}
+                          startIcon={hasInsights ? <VisibilityIcon /> : <AssessmentIcon />}
                           onClick={() => navigate('/dashboard/call-insights', { state: { callData } })}
                           sx={{
                             fontWeight: 600,
@@ -1463,73 +1408,7 @@ const CallTranscription = () => {
                             flexShrink: 0
                           }}
                         >
-                          Generate Insights
-                        </Button>
-                        
-                        <Button
-                          variant="outlined"
-                          onClick={async () => {
-                            try {
-                              setLoading(true);
-                              setProcessingStep('Cleaning transcription format...');
-                              
-                              // Call the Groq function to clean the transcript
-                              const cleanedTranscript = await cleanTranscriptWithGroq(diarizedTranscription);
-                              
-                              // Update the state with cleaned transcript
-                              setDiarizedTranscription(cleanedTranscript);
-                              
-                              // Save the cleaned transcript
-                              await saveTranscription(callId, cleanedTranscript);
-                              
-                              setSuccess("Transcription cleaned and reformatted successfully");
-                              setShowSnackbar(true);
-                            } catch (error) {
-                              console.error('Error cleaning transcript:', error);
-                              setError("Failed to clean transcript format");
-                              setShowSnackbar(true);
-                            } finally {
-                              setLoading(false);
-                            }
-                          }}
-                          sx={{
-                            borderColor: 'var(--primary-color)',
-                            color: 'var(--primary-color)',
-                            '&:hover': { 
-                              borderColor: 'var(--primary-hover)',
-                              bgcolor: 'rgba(79, 70, 229, 0.04)'
-                            },
-                            textTransform: 'none',
-                            fontWeight: 500,
-                            mr: 1
-                          }}
-                          disabled={loading}
-                        >
-                          Clean Format
-                        </Button>
-                        
-                        <Button
-                          variant="contained"
-                          startIcon={<DownloadIcon />}
-                          onClick={handleDownloadTranscript}
-                          sx={{
-                            bgcolor: 'var(--primary-color)',
-                            fontWeight: 500,
-                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-                            '&:hover': { 
-                              bgcolor: 'var(--primary-hover)', 
-                              boxShadow: '0 4px 8px rgba(0,0,0,0.1)'
-                            },
-                            textTransform: 'none',
-                            borderRadius: '6px',
-                            padding: '6px 12px',
-                            fontSize: '0.85rem',
-                            width: 'auto',
-                            display: 'inline-flex',
-                            flexShrink: 0
-                          }}
-                        >
-                          Download
+                          {hasInsights ? 'View Insights' : 'Generate Insights'}
                         </Button>
                         
                         <Tooltip title="Transcription saved to project storage">
@@ -1657,9 +1536,16 @@ const CallTranscription = () => {
                           >
                             <Box
                               sx={{
-                                bgcolor: segment.speaker === 'Speaker 1' || segment.speaker === 'Agent' || segment.speaker === 'Sales Rep'
+                                bgcolor: segment.speaker === 'Speaker 1' || 
+                                           segment.speaker === 'Agent' || 
+                                           segment.speaker === 'Sales Rep' ||
+                                           (callData && segment.speaker === callData.salesRep?.split(' ')[0])
                                   ? 'var(--primary-color)' 
-                                  : segment.speaker === 'Speaker 2' || segment.speaker === 'Caller' || segment.speaker === 'Customer' || segment.speaker === 'Client'
+                                  : segment.speaker === 'Speaker 2' || 
+                                    segment.speaker === 'Caller' || 
+                                    segment.speaker === 'Customer' || 
+                                    segment.speaker === 'Client' ||
+                                    (callData && segment.speaker === callData.client?.split(' ')[0])
                                     ? '#E57373' 
                                     : index % 2 === 0 ? 'var(--primary-color)' : '#E57373',
                                 color: 'white',
@@ -1670,7 +1556,11 @@ const CallTranscription = () => {
                                 mb: 1.5,
                                 fontWeight: 600,
                                 fontSize: '0.9rem',
-                                boxShadow: segment.speaker === 'Speaker 1' || segment.speaker === 'Agent' || segment.speaker === 'Sales Rep' || index % 2 === 0
+                                boxShadow: segment.speaker === 'Speaker 1' || 
+                                           segment.speaker === 'Agent' || 
+                                           segment.speaker === 'Sales Rep' || 
+                                           (callData && segment.speaker === callData.salesRep?.split(' ')[0]) || 
+                                           index % 2 === 0
                                   ? '0 3px 8px rgba(79, 70, 229, 0.25)' 
                                   : '0 3px 8px rgba(229, 115, 115, 0.25)',
                                 letterSpacing: '0.3px'
@@ -1707,19 +1597,31 @@ const CallTranscription = () => {
                               p: 3,
                               borderRadius: '12px',
                               bgcolor: currentTime >= segment.start_time && currentTime <= segment.end_time 
-                                ? (segment.speaker === 'Speaker 1' || segment.speaker === 'Agent' || segment.speaker === 'Sales Rep' || index % 2 === 0 
+                                ? (segment.speaker === 'Speaker 1' || 
+                                   segment.speaker === 'Agent' || 
+                                   segment.speaker === 'Sales Rep' || 
+                                   (callData && segment.speaker === callData.salesRep?.split(' ')[0]) || 
+                                   index % 2 === 0 
                                   ? 'var(--primary-light)' 
                                   : '#FFEBEE')
                                 : '#f9fafb',
                               transition: 'all 0.3s ease',
                               boxShadow: currentTime >= segment.start_time && currentTime <= segment.end_time
-                                ? (segment.speaker === 'Speaker 1' || segment.speaker === 'Agent' || segment.speaker === 'Sales Rep' || index % 2 === 0
+                                ? (segment.speaker === 'Speaker 1' || 
+                                   segment.speaker === 'Agent' || 
+                                   segment.speaker === 'Sales Rep' || 
+                                   (callData && segment.speaker === callData.salesRep?.split(' ')[0]) || 
+                                   index % 2 === 0
                                   ? '0 4px 12px rgba(79, 70, 229, 0.15)' 
                                   : '0 4px 12px rgba(229, 115, 115, 0.15)')
                                 : '0 1px 3px rgba(0,0,0,0.05)',
                               border: '1px solid',
                               borderColor: currentTime >= segment.start_time && currentTime <= segment.end_time
-                                ? (segment.speaker === 'Speaker 1' || segment.speaker === 'Agent' || segment.speaker === 'Sales Rep' || index % 2 === 0 
+                                ? (segment.speaker === 'Speaker 1' || 
+                                   segment.speaker === 'Agent' || 
+                                   segment.speaker === 'Sales Rep' || 
+                                   (callData && segment.speaker === callData.salesRep?.split(' ')[0]) || 
+                                   index % 2 === 0 
                                   ? 'rgba(79, 70, 229, 0.2)' 
                                   : 'rgba(229, 115, 115, 0.2)')
                                 : 'rgba(0,0,0,0.05)',
@@ -1751,7 +1653,10 @@ const CallTranscription = () => {
                                     style={{
                                       fontWeight: isWordActive(word.start_time, word.end_time) ? 700 : 400,
                                       backgroundColor: isWordActive(word.start_time, word.end_time) 
-                                        ? (segment.speaker === 'Speaker 1' || segment.speaker === 'Agent' || segment.speaker === 'Sales Rep' 
+                                        ? (segment.speaker === 'Speaker 1' || 
+                                           segment.speaker === 'Agent' || 
+                                           segment.speaker === 'Sales Rep' ||
+                                           (callData && segment.speaker === callData.salesRep?.split(' ')[0])
                                           ? 'var(--primary-color)' 
                                           : '#E57373') 
                                         : 'transparent',
@@ -1762,7 +1667,10 @@ const CallTranscription = () => {
                                       cursor: 'pointer',
                                       transition: 'all 0.15s ease',
                                       boxShadow: isWordActive(word.start_time, word.end_time) 
-                                        ? (segment.speaker === 'Speaker 1' || segment.speaker === 'Agent' || segment.speaker === 'Sales Rep'
+                                        ? (segment.speaker === 'Speaker 1' || 
+                                           segment.speaker === 'Agent' || 
+                                           segment.speaker === 'Sales Rep' ||
+                                           (callData && segment.speaker === callData.salesRep?.split(' ')[0])
                                           ? '0 2px 5px rgba(79, 70, 229, 0.3)' 
                                           : '0 2px 5px rgba(229, 115, 115, 0.3)') 
                                         : 'none',
@@ -1815,8 +1723,7 @@ const CallTranscription = () => {
                     Ready for Transcription
                   </Typography>
                   <Typography variant="body1" sx={{ mb: 3, maxWidth: '600px', color: 'text.secondary' }}>
-                    Your audio has been uploaded. Click the Transcribe button to process the audio 
-                    and generate a transcript with speaker identification using Groq AI.
+                    Your audio has been uploaded. Click the Transcribe button to process your audio.
                   </Typography>
                 </Box>
               ) : (

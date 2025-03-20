@@ -45,12 +45,74 @@ export const transcribeAudio = async (audioFile) => {
 /**
  * Diarizes the transcription to identify different speakers
  * @param {Object} transcription - The transcription from Whisper
+ * @param {Object} callData - Optional call data containing sales rep and customer names
  * @returns {Promise} - Promise with diarized transcription
  */
-export const diarizeTranscription = async (transcription) => {
+export const diarizeTranscription = async (transcription, callData = null) => {
   try {
     // Use Llama 3.3 70B with Groq to identify speakers - this model has better
     // contextual understanding and can more accurately identify conversation patterns
+    
+    // Extract sales rep and customer names if available from callData
+    let salesRepFirstName = 'Sales Rep';
+    let customerFirstName = 'Customer';
+    
+    if (callData) {
+      // Extract sales rep first name
+      if (callData.salesRep) {
+        const salesRepName = callData.salesRep.trim().split(' ');
+        if (salesRepName.length > 0) {
+          salesRepFirstName = salesRepName[0];
+        }
+      }
+      
+      // Extract customer first name
+      if (callData.client) {
+        const customerName = callData.client.trim().split(' ');
+        if (customerName.length > 0) {
+          customerFirstName = customerName[0];
+        }
+      }
+    }
+    
+    // Fallback to localStorage lookup
+    if (callData === null) {
+      try {
+        // Check if we have data in localStorage by call ID
+        const callId = window.location.pathname.split('/').pop() || 
+                       new URLSearchParams(window.location.search).get('id');
+                       
+        if (callId) {
+          // Check for call data in localStorage
+          const storedCallData = localStorage.getItem(`call_data_${callId}`);
+          if (storedCallData) {
+            const parsedCallData = JSON.parse(storedCallData);
+            
+            // Extract sales rep first name
+            if (parsedCallData.salesRep) {
+              const salesRepName = parsedCallData.salesRep.trim().split(' ');
+              if (salesRepName.length > 0) {
+                salesRepFirstName = salesRepName[0];
+              }
+            }
+            
+            // Extract customer first name
+            if (parsedCallData.client) {
+              const customerName = parsedCallData.client.trim().split(' ');
+              if (customerName.length > 0) {
+                customerFirstName = customerName[0];
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Error retrieving call data from localStorage:', error);
+        // Continue with default names if error
+      }
+    }
+    
+    console.log(`Using names for transcript: Sales Rep = ${salesRepFirstName}, Customer = ${customerFirstName}`);
+    
     const response = await groqClient.post('/chat/completions', {
       model: 'llama-3.3-70b-versatile',
       messages: [
@@ -60,7 +122,7 @@ export const diarizeTranscription = async (transcription) => {
         },
         {
           role: 'user',
-          content: `I need your help with a highly accurate speaker diarization task for a business sales call transcript. This is a call between a sales representative (Agent) and a customer (Caller).
+          content: `I need your help with a highly accurate speaker diarization task for a business sales call transcript. This is a call between a sales representative (${salesRepFirstName}) and a customer (${customerFirstName}).
 
 IMPORTANT FORMATTING REQUIREMENTS:
 1. The response must be a valid JSON array of segments
@@ -70,19 +132,19 @@ IMPORTANT FORMATTING REQUIREMENTS:
    - start_time (number): Precise timestamp in seconds when this segment starts
    - end_time (number): Precise timestamp in seconds when this segment ends
    - text (string): The exact text for this single sentence or speech unit
-   - speaker (string): Either "Agent" (sales rep) or "Caller" (customer)
+   - speaker (string): Use "${salesRepFirstName}" for the sales rep and "${customerFirstName}" for the customer (rather than generic "Agent" or "Caller")
    - words (array, optional): If the original transcript has word-level timing, include an array of objects with {text, start_time, end_time}
 
 SPEAKER IDENTIFICATION GUIDELINES:
 1. Analyze the ENTIRE conversation first to identify speaker patterns
-2. The first speaker is typically the "Agent" (sales representative) who opens the call
+2. The first speaker is typically "${salesRepFirstName}" (sales representative) who opens the call
 3. Look for these reliable indicators:
-   - Agent: Uses professional greetings, company identification, offers assistance
-   - Agent: Uses phrases like "How may I help you?", "Thank you for calling"
-   - Agent: References systems, procedures, product information 
-   - Caller: Explains their problem/need, asks questions about services
-   - Caller: Provides personal details or situation information
-   - Caller: Uses phrases like "I wanted to know", "I'm calling about my order"
+   - ${salesRepFirstName} (Sales Rep): Uses professional greetings, company identification, offers assistance
+   - ${salesRepFirstName} (Sales Rep): Uses phrases like "How may I help you?", "Thank you for calling"
+   - ${salesRepFirstName} (Sales Rep): References systems, procedures, product information 
+   - ${customerFirstName} (Customer): Explains their problem/need, asks questions about services
+   - ${customerFirstName} (Customer): Provides personal details or situation information
+   - ${customerFirstName} (Customer): Uses phrases like "I wanted to know", "I'm calling about my order"
 4. Maintain speaker consistency - the same person should be labeled the same throughout
 5. For any segments where the speaker is truly ambiguous, use context from surrounding segments
 
@@ -98,26 +160,26 @@ Format example:
   {
     "start_time": 0.0,
     "end_time": 2.4,
-    "text": "Hello, this is John from ABC Company.",
-    "speaker": "Agent"
+    "text": "Hello, this is ${salesRepFirstName} from ABC Company.",
+    "speaker": "${salesRepFirstName}"
   },
   {
     "start_time": 2.4,
     "end_time": 5.2,
     "text": "How can I help you today?",
-    "speaker": "Agent"
+    "speaker": "${salesRepFirstName}"
   },
   {
     "start_time": 5.5,
     "end_time": 8.3,
     "text": "Hi, I'm calling about my recent order.",
-    "speaker": "Caller"
+    "speaker": "${customerFirstName}"
   },
   {
     "start_time": 8.3,
     "end_time": 10.1,
     "text": "I haven't received it yet and it's been two weeks.",
-    "speaker": "Caller"
+    "speaker": "${customerFirstName}"
   }
 ]
 
@@ -379,9 +441,10 @@ export const splitSegment = (diarizedTranscription, segmentIndex, wordIndex, sec
 /**
  * Cleans and formats a transcript using Groq LLM
  * @param {Object|string} transcription - Transcription in potentially messy format
+ * @param {Object} callData - Optional call data containing sales rep and customer names
  * @returns {Promise<Array>} - Promise with cleaned and formatted transcription
  */
-export const cleanTranscriptWithGroq = async (transcription) => {
+export const cleanTranscriptWithGroq = async (transcription, callData = null) => {
   try {
     // Parse if string
     let transcriptObj = transcription;
@@ -393,6 +456,66 @@ export const cleanTranscriptWithGroq = async (transcription) => {
         transcriptObj = { text: transcription };
       }
     }
+    
+    // Extract sales rep and customer names if available from callData
+    let salesRepFirstName = 'Sales Rep';
+    let customerFirstName = 'Customer';
+    
+    if (callData) {
+      // Extract sales rep first name
+      if (callData.salesRep) {
+        const salesRepName = callData.salesRep.trim().split(' ');
+        if (salesRepName.length > 0) {
+          salesRepFirstName = salesRepName[0];
+        }
+      }
+      
+      // Extract customer first name
+      if (callData.client) {
+        const customerName = callData.client.trim().split(' ');
+        if (customerName.length > 0) {
+          customerFirstName = customerName[0];
+        }
+      }
+    }
+    
+    // Fallback to localStorage lookup
+    if (callData === null) {
+      try {
+        // Check if we have data in localStorage by call ID
+        const callId = window.location.pathname.split('/').pop() || 
+                     new URLSearchParams(window.location.search).get('id');
+                     
+        if (callId) {
+          // Check for call data in localStorage
+          const storedCallData = localStorage.getItem(`call_data_${callId}`);
+          if (storedCallData) {
+            const parsedCallData = JSON.parse(storedCallData);
+            
+            // Extract sales rep first name
+            if (parsedCallData.salesRep) {
+              const salesRepName = parsedCallData.salesRep.trim().split(' ');
+              if (salesRepName.length > 0) {
+                salesRepFirstName = salesRepName[0];
+              }
+            }
+            
+            // Extract customer first name
+            if (parsedCallData.client) {
+              const customerName = parsedCallData.client.trim().split(' ');
+              if (customerName.length > 0) {
+                customerFirstName = customerName[0];
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Error retrieving call data from localStorage:', error);
+        // Continue with default names if error
+      }
+    }
+    
+    console.log(`Using names for transcript cleaning: Sales Rep = ${salesRepFirstName}, Customer = ${customerFirstName}`);
 
     // Send to Groq for cleaning and formatting
     const response = await groqClient.post('/chat/completions', {
@@ -411,7 +534,7 @@ IMPORTANT FORMATTING REQUIREMENTS:
 2. Each segment should represent a SINGLE COMPLETE SENTENCE or natural speech unit
 3. Break at every period/full stop to create new segments
 4. Each segment must have these properties:
-   - speaker: Should be either "Agent" (sales rep) or "Caller" (customer) based on context clues
+   - speaker: Use "${salesRepFirstName}" for the sales rep and "${customerFirstName}" for the customer (instead of generic "Agent" or "Caller")
    - text: The exact text for this single sentence or speech unit
    - start_time: A numeric value for when this segment starts (use sequential integers if not provided)
    - end_time: A numeric value for when this segment ends (use start_time + 1 if not provided)
@@ -420,14 +543,14 @@ Here's the transcription to clean and format: ${JSON.stringify(transcriptObj)}
 
 SPEAKER IDENTIFICATION GUIDELINES:
 1. Analyze the ENTIRE conversation first to identify speaker patterns
-2. The first speaker is typically the "Agent" (sales representative) who opens the call
+2. The first speaker is typically "${salesRepFirstName}" (the sales representative) who opens the call
 3. Look for these reliable indicators:
-   - Agent: Uses professional greetings, company identification, offers assistance
-   - Agent: Uses phrases like "How may I help you?", "Thank you for calling"
-   - Agent: References systems, procedures, product information 
-   - Caller: Explains their problem/need, asks questions about services
-   - Caller: Provides personal details or situation information
-   - Caller: Uses phrases like "I wanted to know", "I'm calling about my order"
+   - ${salesRepFirstName} (Sales Rep): Uses professional greetings, company identification, offers assistance
+   - ${salesRepFirstName} (Sales Rep): Uses phrases like "How may I help you?", "Thank you for calling"
+   - ${salesRepFirstName} (Sales Rep): References systems, procedures, product information 
+   - ${customerFirstName} (Customer): Explains their problem/need, asks questions about services
+   - ${customerFirstName} (Customer): Provides personal details or situation information
+   - ${customerFirstName} (Customer): Uses phrases like "I wanted to know", "I'm calling about my order"
 4. Maintain speaker consistency - the same person should be labeled the same throughout
 5. For any segments where the speaker is truly ambiguous, use context from previous and following segments
 

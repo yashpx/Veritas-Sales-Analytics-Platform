@@ -36,6 +36,10 @@ const CallInsights = () => {
         // Fetch insights for the call
         const insightsData = await fetchCallInsights(callData.id);
         setInsights(insightsData);
+        
+        // Set a flag in localStorage to indicate insights exist
+        localStorage.setItem(`insights_flag_${callData.id}`, 'true');
+        
         setLoading(false);
       } catch (err) {
         console.error("Error loading insights:", err);
@@ -428,19 +432,6 @@ const CallInsights = () => {
               </Box>
             )}
             
-            {/* Raw data section (hidden in production) */}
-            {process.env.NODE_ENV === 'development' && insights.raw_insights && (
-              <Box sx={{ mt: 4 }}>
-                <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
-                  Raw Insights Data (Dev Only)
-                </Typography>
-                <Paper sx={{ p: 2, borderRadius: 2, bgcolor: '#f5f5f5', overflowX: 'auto' }}>
-                  <pre style={{ margin: 0, fontSize: '0.8rem', maxWidth: '100%', overflowX: 'auto', wordBreak: 'break-word', whiteSpace: 'pre-wrap' }}>
-                    {JSON.stringify(insights.raw_insights, null, 2)}
-                  </pre>
-                </Paper>
-              </Box>
-            )}
           </Box>
         ) : (
           <Alert severity="info" sx={{ mb: 3 }}>
