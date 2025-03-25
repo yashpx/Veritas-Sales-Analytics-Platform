@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import DashboardLayout from '../components/layout/DashboardLayout';
 import Button from '../components/ui/Button';
 import Card from '../components/ui/Card';
 import supabase from '../utils/supabaseClient';
-import { Search, Phone, User } from 'lucide-react';
+import { Search, Phone, User, X, Clock, Users, BookOpen, List, BarChart, ChevronLeft } from 'lucide-react';
 import '../styles/dialpad.css';
 
 // Define Supabase URL and key from environment variables or defaults
@@ -24,6 +24,17 @@ const DialPad = () => {
   const [filteredContacts, setFilteredContacts] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
+  const [showContactsModal, setShowContactsModal] = useState(false);
+  const [selectedContact, setSelectedContact] = useState(null);
+  const [recentCalls, setRecentCalls] = useState([]);
+  const [callLogged, setCallLogged] = useState(false);
+  const [audioReady, setAudioReady] = useState(false);
+  
+  // Audio references
+  const dialToneRef = useRef(null);
+  const connectToneRef = useRef(null);
+  const endToneRef = useRef(null);
+  const keypadToneRef = useRef(null);
 
   // Check if a number was passed via state
   useEffect(() => {
@@ -38,9 +49,6 @@ const DialPad = () => {
       navigate('/login');
     }
   }, [user, navigate]);
-  
-  // Track if call was successfully logged
-  const [callLogged, setCallLogged] = useState(false);
   
   // Fetch contacts
   useEffect(() => {
@@ -83,8 +91,45 @@ const DialPad = () => {
       }
     };
 
+    // Fetch recent calls
+    const fetchRecentCalls = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('call_logs')
+          .select(`
+            call_id,
+            call_date,
+            duration_minutes,
+            customers (
+              customer_id,
+              customer_first_name,
+              customer_last_name,
+              "phone number"
+            )
+          `)
+          .order('call_date', { ascending: false })
+          .limit(5);
+
+        if (error) throw error;
+
+        const recentCallsData = data.map(call => ({
+          id: call.call_id,
+          date: new Date(call.call_date),
+          duration: call.duration_minutes,
+          customerName: call.customers ? `${call.customers.customer_first_name} ${call.customers.customer_last_name}` : 'Unknown',
+          phoneNumber: call.customers?.phone_number || '',
+          customerId: call.customers?.customer_id || null
+        }));
+
+        setRecentCalls(recentCallsData);
+      } catch (error) {
+        console.error('Error fetching recent calls:', error);
+      }
+    };
+
     if (user) {
       fetchContacts();
+      fetchRecentCalls();
     }
   }, [user]);
 
@@ -96,9 +141,48 @@ const DialPad = () => {
       }
     };
   }, [timerInterval]);
+  
+  // Initialize audio elements
+  useEffect(() => {
+    // Function to safely play audio
+    const safelyPlayAudio = async (audioRef) => {
+      if (!audioRef.current) return;
+      
+      try {
+        // Reset the audio first to prevent play/pause conflicts
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        
+        // Use the play promise to handle errors properly
+        const playPromise = audioRef.current.play();
+        
+        if (playPromise !== undefined) {
+          playPromise.catch(error => {
+            // Auto-play was prevented or another error occurred
+            console.log("Audio play prevented:", error);
+          });
+        }
+      } catch (error) {
+        console.error("Error playing audio:", error);
+      }
+    };
+    
+    // Attach the safelyPlayAudio method to each audio element
+    if (dialToneRef.current) dialToneRef.current.safelyPlay = () => safelyPlayAudio(dialToneRef);
+    if (connectToneRef.current) connectToneRef.current.safelyPlay = () => safelyPlayAudio(connectToneRef);
+    if (endToneRef.current) endToneRef.current.safelyPlay = () => safelyPlayAudio(endToneRef);
+    if (keypadToneRef.current) keypadToneRef.current.safelyPlay = () => safelyPlayAudio(keypadToneRef);
+    
+    setAudioReady(true);
+  }, []);
 
   const handleDigitClick = (digit) => {
     setPhoneNumber(prev => prev + digit);
+    
+    // Play keypad tone
+    if (audioReady && keypadToneRef.current && keypadToneRef.current.safelyPlay) {
+      keypadToneRef.current.safelyPlay();
+    }
   };
 
   const handleBackspace = () => {
@@ -107,6 +191,18 @@ const DialPad = () => {
   
   const handleContactSelect = (contact) => {
     setPhoneNumber(contact.phone);
+    setSelectedContact(contact);
+    setShowContactsModal(false);
+  };
+
+  const handleRecentCallSelect = (call) => {
+    // Find the contact associated with this call
+    const contact = contacts.find(c => c.id === call.customerId);
+    if (contact) {
+      handleContactSelect(contact);
+    } else if (call.phoneNumber) {
+      setPhoneNumber(call.phoneNumber);
+    }
   };
   
   const handleSearchChange = (e) => {
@@ -134,12 +230,28 @@ const DialPad = () => {
     try {
       setCallStatus('calling');
       
+      // Play dial tone
+      if (audioReady && dialToneRef.current && dialToneRef.current.safelyPlay) {
+        dialToneRef.current.safelyPlay();
+      }
+      
       // Generate a call ID for reference (simulating an actual call service)
       const callId = `call_${Math.random().toString(36).substring(2, 11)}`;
       console.log('Simulated call initiated with ID:', callId);
       
       // For demo purposes, simulate connection after 2 seconds
       setTimeout(() => {
+        // Stop dial tone
+        if (dialToneRef.current) {
+          dialToneRef.current.pause();
+          dialToneRef.current.currentTime = 0;
+        }
+        
+        // Play connect tone
+        if (audioReady && connectToneRef.current && connectToneRef.current.safelyPlay) {
+          connectToneRef.current.safelyPlay();
+        }
+        
         setCallStatus('connected');
         // Start call timer
         const interval = setInterval(() => {
@@ -150,6 +262,12 @@ const DialPad = () => {
     } catch (error) {
       console.error('Failed to initiate call:', error);
       setCallStatus('idle');
+      
+      // Stop any playing audio
+      if (dialToneRef.current) {
+        dialToneRef.current.pause();
+        dialToneRef.current.currentTime = 0;
+      }
     }
   };
 
@@ -157,6 +275,22 @@ const DialPad = () => {
     try {
       // End the simulated call
       console.log('Simulated call ended');
+      
+      // Stop any ongoing call audio
+      if (dialToneRef.current) {
+        dialToneRef.current.pause();
+        dialToneRef.current.currentTime = 0;
+      }
+      
+      if (connectToneRef.current) {
+        connectToneRef.current.pause();
+        connectToneRef.current.currentTime = 0;
+      }
+      
+      // Play end call tone
+      if (audioReady && endToneRef.current && endToneRef.current.safelyPlay) {
+        endToneRef.current.safelyPlay();
+      }
       
       setCallStatus('ended');
       if (timerInterval) {
@@ -292,6 +426,19 @@ const DialPad = () => {
         setTimeout(() => {
           setCallLogged(false);
         }, 5000);
+        
+        // Add to recent calls
+        const newRecentCall = {
+          id: data[0].call_id,
+          date: new Date(),
+          duration: durationMinutes,
+          customerName: selectedContact ? selectedContact.name : 'Unknown',
+          phoneNumber: phoneNumber,
+          customerId: customerId
+        };
+        
+        setRecentCalls(prev => [newRecentCall, ...prev.slice(0, 4)]);
+        
       } catch (dbError) {
         console.error('Failed to log call to database:', dbError);
         
@@ -357,6 +504,20 @@ const DialPad = () => {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
+  const formatDate = (date) => {
+    const today = new Date();
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    
+    if (date.toDateString() === today.toDateString()) {
+      return 'Today';
+    } else if (date.toDateString() === yesterday.toDateString()) {
+      return 'Yesterday';
+    } else {
+      return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    }
+  };
+
   const renderDialPad = () => {
     const digits = [
       '1', '2', '3',
@@ -381,60 +542,141 @@ const DialPad = () => {
     );
   };
 
-  // Render contact list
-  const renderContactsList = () => {
+  const renderQuickActions = () => {
     return (
-      <div className="contacts-sidebar">
-        <div className="contacts-header">
-          <h2>Contacts</h2>
-          <div className="contacts-search">
-            <Search size={16} className="search-icon" />
-            <input
-              type="text"
-              placeholder="Search contacts..."
+      <div className="quick-actions-grid">
+        <button className="quick-action-button" onClick={() => setShowContactsModal(true)}>
+          <Users size={20} />
+          <span>Contacts</span>
+        </button>
+        <button className="quick-action-button">
+          <Clock size={20} />
+          <span>Recent</span>
+        </button>
+        <button className="quick-action-button">
+          <BookOpen size={20} />
+          <span>Voicemail</span>
+        </button>
+        <button className="quick-action-button">
+          <List size={20} />
+          <span>Call Log</span>
+        </button>
+      </div>
+    );
+  };
+
+  const renderRecentCalls = () => {
+    if (recentCalls.length === 0) {
+      return (
+        <div className="recent-calls-empty">
+          <p>No recent calls</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="recent-calls-list">
+        {recentCalls.map(call => (
+          <div key={call.id} className="recent-call-item" onClick={() => handleRecentCallSelect(call)}>
+            <div className="recent-call-avatar">
+              <Phone size={16} />
+            </div>
+            <div className="recent-call-info">
+              <div className="recent-call-name">{call.customerName}</div>
+              <div className="recent-call-details">
+                <span>{formatDate(call.date)}</span>
+                <span className="recent-call-duration">{call.duration} min</span>
+              </div>
+            </div>
+            <button 
+              className="recent-call-action"
+              onClick={(e) => {
+                e.stopPropagation();
+                call.phoneNumber && setPhoneNumber(call.phoneNumber);
+                setTimeout(() => handleStartCall(), 100);
+              }}
+            >
+              <Phone size={16} />
+            </button>
+          </div>
+        ))}
+      </div>
+    );
+  };
+
+  // Render contacts modal
+  const renderContactsModal = () => {
+    if (!showContactsModal) return null;
+
+    return (
+      <div className="contacts-modal-overlay">
+        <div className="contacts-modal">
+          <div className="contacts-modal-header">
+            <button className="back-button" onClick={() => setShowContactsModal(false)}>
+              <ChevronLeft size={16} />
+              Back
+            </button>
+            <h2>Select Contact</h2>
+            <button className="close-modal-button" onClick={() => setShowContactsModal(false)}>
+              <X size={20} />
+            </button>
+          </div>
+          
+          <div className="contacts-modal-search">
+            <Search size={18} className="search-icon" />
+            <input 
+              type="text" 
+              className="search-input" 
+              placeholder="Search contacts..." 
               value={searchQuery}
               onChange={handleSearchChange}
+              autoFocus
             />
           </div>
-        </div>
-        
-        <div className="contacts-list">
-          {loading ? (
-            <div className="contacts-loading">Loading contacts...</div>
-          ) : filteredContacts.length === 0 ? (
-            <div className="no-contacts">
-              {searchQuery 
-                ? 'No contacts match your search' 
-                : 'No contacts with phone numbers found'}
-            </div>
-          ) : (
-            filteredContacts.map(contact => (
-              <div 
-                key={contact.id}
-                className="contact-item"
-                onClick={() => handleContactSelect(contact)}
-              >
-                <div className="contact-avatar">
-                  <User size={16} />
-                </div>
-                <div className="contact-info">
-                  <div className="contact-name">{contact.name}</div>
-                  <div className="contact-number">{contact.phone}</div>
-                </div>
-                <button 
-                  className="contact-call-button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleContactSelect(contact);
-                    // Short delay to allow UI to update before call
-                    setTimeout(() => handleStartCall(), 100);
-                  }}
-                >
-                  <Phone size={16} />
-                </button>
+          
+          <div className="contacts-modal-list">
+            {loading ? (
+              <div className="loading">
+                <div className="loading-spinner"></div>
+                <p>Loading contacts...</p>
               </div>
-            ))
-          )}
+            ) : filteredContacts.length === 0 ? (
+              <div className="no-results">
+                <p>No contacts found. Try adjusting your search.</p>
+              </div>
+            ) : (
+              filteredContacts.map(contact => (
+                <div 
+                  key={contact.id} 
+                  className="contact-modal-item"
+                  onClick={() => handleContactSelect(contact)}
+                >
+                  <div className="contact-modal-avatar">
+                    {contact.firstName?.[0]}{contact.lastName?.[0]}
+                  </div>
+                  <div className="contact-modal-info">
+                    <div className="contact-modal-name">{contact.name}</div>
+                    <div className="contact-modal-details">
+                      <span>{contact.phone}</span>
+                      {contact.company !== 'Not specified' && (
+                        <span className="contact-modal-company">{contact.company}</span>
+                      )}
+                    </div>
+                  </div>
+                  <button 
+                    className="contact-modal-call"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleContactSelect(contact);
+                      setTimeout(() => handleStartCall(), 100);
+                    }}
+                  >
+                    <Phone size={18} />
+                  </button>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
     );
@@ -442,160 +684,140 @@ const DialPad = () => {
 
   return (
     <DashboardLayout>
-      <div className="dialpad-page">
-        <div className="dialpad-page-header">
-          <div className="header-left">
-            <h1>Dial Pad</h1>
-            <p>Make calls and manage contacts</p>
-          </div>
+      {/* Hidden audio elements */}
+      <audio ref={dialToneRef} preload="auto">
+        <source src="/assets/audio/dial-tone.mp3" type="audio/mpeg" />
+      </audio>
+      <audio ref={connectToneRef} preload="auto">
+        <source src="/assets/audio/connect-tone.mp3" type="audio/mpeg" />
+      </audio>
+      <audio ref={endToneRef} preload="auto">
+        <source src="/assets/audio/end-tone.mp3" type="audio/mpeg" />
+      </audio>
+      <audio ref={keypadToneRef} preload="auto">
+        <source src="/assets/audio/keypad-tone.mp3" type="audio/mpeg" />
+      </audio>
+      
+      <div className="dialpad-bento-container">
+        <div className="dialpad-bento-header">
+          <h1>Dial Pad</h1>
+          <p>Make calls and manage contacts</p>
         </div>
         
-        <div className="dialpad-page-content">
-          <div className="dialpad-section">
-            <Card className="dialpad-card">
-              <div className="phone-display">
-                <input
-                  type="text"
-                  className="phone-input"
-                  style={{ 
-                    width: phoneNumber && callStatus === 'idle' ? 'calc(100% - 40px)' : '100%' 
-                  }}
-                  value={phoneNumber}
-                  onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9*#]/g, ''))}
-                  placeholder="Enter phone number"
-                  disabled={callStatus === 'calling' || callStatus === 'connected'}
-                />
-                {phoneNumber && callStatus === 'idle' && (
-                  <button className="backspace-button" onClick={handleBackspace}>
-                    <span className="backspace-icon">⌫</span>
-                  </button>
-                )}
-              </div>
-
-              {callStatus === 'connected' && (
-                <div className="call-timer">
-                  <p>Call in progress</p>
-                  <p className="timer">{formatTime(callDuration)}</p>
-                </div>
-              )}
-              
-              {callStatus === 'calling' && (
-                <div className="call-status">
-                  <p>Calling...</p>
-                  <div className="calling-animation">
-                    <div className="dot"></div>
-                    <div className="dot"></div>
-                    <div className="dot"></div>
+        <div className="dialpad-bento-grid">
+          {/* Main Dialer Box */}
+          <div className="bento-box dialer-box">
+            <div className="dialer-contact-display">
+              {selectedContact ? (
+                <div className="selected-contact">
+                  <div className="contact-avatar">
+                    {selectedContact.firstName?.[0]}{selectedContact.lastName?.[0]}
                   </div>
+                  <div className="contact-info">
+                    <h3>{selectedContact.name}</h3>
+                    {selectedContact.company !== 'Not specified' && <p>{selectedContact.company}</p>}
+                  </div>
+                  <button className="clear-contact" onClick={() => setSelectedContact(null)}>
+                    <X size={16} />
+                  </button>
                 </div>
+              ) : (
+                <button className="select-contact-button" onClick={() => setShowContactsModal(true)}>
+                  <Users size={20} />
+                  <span>Select Contact</span>
+                </button>
               )}
-              
-              {callStatus === 'ended' && (
-                <div className="call-ended">
-                  <p>Call ended</p>
-                  <p className="timer final-time">{formatTime(callDuration)}</p>
-                </div>
+            </div>
+            
+            <div className="phone-display">
+              <input
+                type="text"
+                className="phone-input"
+                style={{ 
+                  width: phoneNumber && callStatus === 'idle' ? 'calc(100% - 40px)' : '100%' 
+                }}
+                value={phoneNumber}
+                onChange={(e) => setPhoneNumber(e.target.value.replace(/[^0-9*#]/g, ''))}
+                placeholder="Enter phone number"
+                disabled={callStatus === 'calling' || callStatus === 'connected'}
+              />
+              {phoneNumber && callStatus === 'idle' && (
+                <button className="backspace-button" onClick={handleBackspace}>
+                  <span className="backspace-icon">⌫</span>
+                </button>
               )}
-              
-              {callLogged && (
-                <div className="call-logged-success">
-                  <p>✓ Call successfully logged to database</p>
-                </div>
-              )}
+            </div>
 
-              {renderDialPad()}
-
-              <div className="call-controls">
-                {(callStatus === 'idle' || callStatus === 'ended') ? (
-                  <Button 
-                    className="call-button" 
-                    onClick={handleStartCall}
-                    disabled={!phoneNumber || phoneNumber.length < 10}
-                  >
-                    Call
-                  </Button>
-                ) : (
-                  <Button 
-                    className="end-call-button" 
-                    onClick={handleEndCall}
-                  >
-                    End Call
-                  </Button>
-                )}
+            {callStatus === 'connected' && (
+              <div className="call-timer">
+                <p>Call in progress</p>
+                <p className="timer">{formatTime(callDuration)}</p>
               </div>
-            </Card>
+            )}
+            
+            {callStatus === 'calling' && (
+              <div className="call-status">
+                <p>Calling...</p>
+                <div className="calling-animation">
+                  <div className="dot"></div>
+                  <div className="dot"></div>
+                  <div className="dot"></div>
+                </div>
+              </div>
+            )}
+            
+            {callStatus === 'ended' && (
+              <div className="call-ended">
+                <p>Call ended</p>
+                <p className="timer final-time">{formatTime(callDuration)}</p>
+              </div>
+            )}
+            
+            {callLogged && (
+              <div className="call-logged-success">
+                <p>✓ Call successfully logged to database</p>
+              </div>
+            )}
+
+            {renderDialPad()}
+
+            <div className="call-controls">
+              {(callStatus === 'idle' || callStatus === 'ended') ? (
+                <button 
+                  className="call-button" 
+                  onClick={handleStartCall}
+                  disabled={!phoneNumber || phoneNumber.length < 10}
+                >
+                  <Phone size={20} />
+                  Call
+                </button>
+              ) : (
+                <button 
+                  className="end-call-button" 
+                  onClick={handleEndCall}
+                >
+                  End Call
+                </button>
+              )}
+            </div>
           </div>
           
-          <div className="contacts-section">
-            <div className="contacts-header">
-              <div className="header-content">
-                <h2>Contacts</h2>
-                <p>{contacts.length} Total Contacts</p>
-              </div>
-              <div className="search-container">
-                <Search size={18} className="search-icon" />
-                <input 
-                  type="text" 
-                  className="search-input" 
-                  placeholder="Search contacts..." 
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                />
-              </div>
-            </div>
-
-            <div className="contacts-table">
-              <div className="table-header">
-                <div className="table-cell name-cell">Name</div>
-                <div className="table-cell">Phone Number</div>
-                <div className="table-cell">Email</div>
-                <div className="table-cell">Company</div>
-                <div className="table-cell call-cell">Action</div>
-              </div>
-              
-              <div className="table-body">
-                {loading ? (
-                  <div className="loading">
-                    <div className="loading-spinner"></div>
-                    <p>Loading contacts...</p>
-                  </div>
-                ) : filteredContacts.length === 0 ? (
-                  <div className="no-results">
-                    <p>No contacts found. Try adjusting your search.</p>
-                  </div>
-                ) : (
-                  filteredContacts.map(contact => (
-                    <div 
-                      key={contact.id} 
-                      className="table-row"
-                      onClick={() => handleContactSelect(contact)}
-                    >
-                      <div className="table-cell name-cell">{contact.name}</div>
-                      <div className="table-cell">{contact.phone}</div>
-                      <div className="table-cell email-cell">{contact.email}</div>
-                      <div className="table-cell">{contact.company}</div>
-                      <div className="table-cell call-cell">
-                        <button 
-                          className="call-action-button" 
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleContactSelect(contact);
-                            // Short delay to allow UI to update before call
-                            setTimeout(() => handleStartCall(), 100);
-                          }}
-                        >
-                          <Phone size={18} />
-                          Call
-                        </button>
-                      </div>
-                    </div>
-                  ))
-                )}
-              </div>
-            </div>
+          {/* Contacts Box (renamed from Recent Calls) */}
+          <div className="bento-box contacts-box">
+            <h3>Contacts</h3>
+            <button 
+              className="view-all-contacts-btn" 
+              onClick={() => setShowContactsModal(true)}
+            >
+              <Users size={16} />
+              <span>View All Contacts</span>
+            </button>
+            {renderRecentCalls()}
           </div>
         </div>
       </div>
+      
+      {renderContactsModal()}
     </DashboardLayout>
   );
 };

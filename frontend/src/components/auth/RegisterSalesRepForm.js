@@ -114,7 +114,6 @@ const RegisterSalesRepForm = ({ onSuccess }) => {
               value={formData.sales_rep_first_name}
               onChange={handleChange}
               required
-              icon={<User size={16} />}
             />
           </div>
           
@@ -127,7 +126,6 @@ const RegisterSalesRepForm = ({ onSuccess }) => {
               value={formData.sales_rep_last_name}
               onChange={handleChange}
               required
-              icon={<User size={16} />}
             />
           </div>
         </div>
@@ -142,7 +140,6 @@ const RegisterSalesRepForm = ({ onSuccess }) => {
               value={formData.email}
               onChange={handleChange}
               required
-              icon={<Mail size={16} />}
             />
           </div>
           
@@ -154,7 +151,6 @@ const RegisterSalesRepForm = ({ onSuccess }) => {
               placeholder="1234567890"
               value={formData.phone_number}
               onChange={handleChange}
-              icon={<Phone size={16} />}
             />
           </div>
         </div>
@@ -169,7 +165,6 @@ const RegisterSalesRepForm = ({ onSuccess }) => {
               value={formData.password}
               onChange={handleChange}
               required
-              icon={<Lock size={16} />}
             />
           </div>
           
@@ -182,7 +177,6 @@ const RegisterSalesRepForm = ({ onSuccess }) => {
               value={formData.confirmPassword}
               onChange={handleChange}
               required
-              icon={<Lock size={16} />}
             />
           </div>
         </div>

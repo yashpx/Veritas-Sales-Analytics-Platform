@@ -12,6 +12,14 @@ A comprehensive sales management platform that enables sales teams to manage cal
 - Track call logs and customer interactions
 - Monitor KPI metrics for sales performance
 
+### Call Analysis & Insights
+- Advanced call transcription with speaker identification
+- Conversation analytics powered by Groq API
+- Detailed insights including call summaries, ratings, and recommendations
+- Buyer intent detection and objection tracking
+- Conversation quality metrics and improvement suggestions
+- Benchmark comparisons against best practices
+
 ### Authentication System
 - User registration with email and password
 - Secure login and authentication
@@ -19,6 +27,7 @@ A comprehensive sales management platform that enables sales teams to manage cal
 - Password reset functionality
 - Session management
 - Protected routes for authenticated users
+- Sales representative management
 
 ### Dashboard & Analytics
 - Sales KPI dashboard with real-time metrics
@@ -39,6 +48,7 @@ A comprehensive sales management platform that enables sales teams to manage cal
 - Error handling and validation
 - AI-powered audio transcription using Groq API
 - Call functionality through Twilio integration
+- Microservice architecture with dedicated insights processing service
 
 ## Technology Stack
 
@@ -59,12 +69,46 @@ A comprehensive sales management platform that enables sales teams to manage cal
 - Supabase Python Client
 - Pytest for testing
 
+### Insights Processing
+- Node.js Express server
+- Python analysis modules
+- Groq API for AI analysis
+- Supabase for data storage and retrieval
+- Custom RAG (Retrieval Augmented Generation) implementation
+
 ### DevOps
 - GitHub for version control
 - Environment variables for configuration
 - Node.js and npm for package management
 
+## Project Structure
+
+```
+veritas-authentication/
+├── backend/                # FastAPI backend service
+│   ├── app/                # Core application modules
+│   ├── config/             # Configuration settings
+│   └── main.py             # Entry point
+├── frontend/               # React frontend application
+│   ├── public/             # Static assets
+│   ├── src/                # Source code
+│   │   ├── components/     # UI components
+│   │   ├── context/        # React context providers
+│   │   ├── pages/          # Page components
+│   │   ├── styles/         # CSS styles
+│   │   └── utils/          # Utility functions
+├── insightspg/             # Call insights processing service
+│   ├── benchmark_folder/   # Benchmark call examples
+│   ├── server.js           # Express server entry point
+│   ├── insights.py         # Main insights coordination
+│   └── *_py               # Python analysis modules
+├── audio files/            # Sample audio recordings
+└── start.sh                # Unified startup script
+```
+
 ## Getting Started
+
+For simple setup instructions, see [SETUP.md](./SETUP.md) which includes a one-command startup option.
 
 ### Prerequisites
 - Node.js (v14+)
@@ -99,11 +143,29 @@ A comprehensive sales management platform that enables sales teams to manage cal
    uvicorn main:app --reload --port 5000
    ```
 
-6. Also set up the AI server with the following command:
-   ```
-   /projects/veritas-authentication/insightspg$ ./start_insightspg.sh
+### Insights Processing Service Setup
 
+1. Navigate to the insightspg directory:
    ```
+   cd insightspg
+   ```
+
+2. Install Node dependencies:
+   ```
+   npm install
+   ```
+
+3. Make the startup script executable:
+   ```
+   chmod +x start_insightspg.sh
+   ```
+
+4. Start the insights service:
+   ```
+   ./start_insightspg.sh
+   ```
+
+This service runs on port 5001 and processes call transcriptions to generate insights.
 
 ### Frontend Setup
 
@@ -124,6 +186,7 @@ A comprehensive sales management platform that enables sales teams to manage cal
    REACT_APP_GROQ_API_KEY=your_groq_api_key
    REACT_APP_TWILIO_ACCOUNT_SID=your_twilio_account_sid
    REACT_APP_TWILIO_AUTH_TOKEN=your_twilio_auth_token
+   REACT_APP_INSIGHTS_API_URL=http://localhost:5001
    ```
 
 4. Start the development server:
@@ -161,6 +224,7 @@ A comprehensive sales management platform that enables sales teams to manage cal
 - Analyze conversation for key insights and action items
 - Track follow-up tasks from call content
 - View synchronized transcripts with audio playback
+- Get AI-powered conversation quality metrics and recommendations
 
 ### Dashboard
 - View KPIs and metrics on the main dashboard
