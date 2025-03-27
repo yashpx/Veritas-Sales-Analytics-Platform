@@ -2,12 +2,7 @@
 
 A comprehensive sales management platform that enables sales teams to manage calls, analyze conversations, and track performance metrics. Built with React, FastAPI, Supabase, and integrated with AI services.
 
-## Quick Start Guide
-
-We provide unified startup scripts for different operating systems. Choose the appropriate one based on your system:
-
-
-### User logins
+## User logins
 
 ```
 Sales rep login:
@@ -21,6 +16,11 @@ password: 123456
 Alternatively, you can create your own account for Manager, all the existing data for the default organization will load for the same manager.
 
 ```
+
+## Quick Start Guide
+
+We provide unified startup scripts for different operating systems. Choose the appropriate one based on your system:
+
 ### For Windows Users
 ```powershell
 # Run the application using PowerShell
