@@ -6,6 +6,21 @@ A comprehensive sales management platform that enables sales teams to manage cal
 
 We provide unified startup scripts for different operating systems. Choose the appropriate one based on your system:
 
+
+### User logins
+
+```
+Sales rep login:
+email: Charliebrown@veritas.com
+password: password123
+
+Manager login:
+email: akhilanil.100@gmail.com
+password: 123456
+
+Alternatively, you can create your own account for Manager, all the existing data for the default organization will load for the same manager.
+
+```
 ### For Windows Users
 ```powershell
 # Run the application using PowerShell
