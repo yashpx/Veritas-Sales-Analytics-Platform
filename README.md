@@ -89,11 +89,6 @@ If the automated scripts don't work, you can manually start each component using
 
 
 
-
-## Getting Started
-
-For simple setup instructions, see [SETUP.md](./SETUP.md) which includes a one-command startup option.
-
 ### Prerequisites
 - Node.js (v14+)
 - npm or yarn
