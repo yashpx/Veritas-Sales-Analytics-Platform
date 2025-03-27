@@ -2,8 +2,10 @@
 
 A comprehensive sales management platform that enables sales teams to manage calls, analyze conversations, and track performance metrics. Built with React, FastAPI, Supabase, and integrated with AI services.
 
-The source code for this project can be found at - `https://github.com/adakidpv/veritas`
+The source code for this project can be found at - https://github.com/adakidpv/veritas
 Since it contains environment variables, the repo is private, so Professor Haitham has been added as a collaborator (@drhyaish). 
+
+The landing page for this website is deployed at - https://veritas-uowd.tiiny.site/#
 
 ## User logins
 
