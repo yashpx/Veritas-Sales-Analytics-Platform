@@ -38,6 +38,14 @@ The startup script assumes you have these installed:
 - Python 3.8+
 - A modern web browser
 
+## Cross-Platform Support
+
+The Veritas platform now includes enhanced compatibility for both Ubuntu-based systems and macOS:
+
+- **macOS Users**: The application has been updated to handle dependency differences on macOS, particularly with modules like pydantic-core.
+- **Dependency Management**: The insights service will gracefully handle missing dependencies and provide fallback responses.
+- **Error Handling**: Improved error handling ensures the application continues to function even when specific modules are unavailable.
+
 ## Manual Setup
 
 If you prefer to set up each component manually, or if you're encountering issues with the unified script, please follow the detailed instructions in the [README.md](./README.md) file under the "Getting Started" section.
@@ -60,5 +68,30 @@ If you encounter any issues with the startup script:
 2. Verify that all prerequisite software is installed
 3. Try manually starting each component following the instructions in README.md
 4. Ensure that ports 3000, 5000, and 5001 are not already in use by other applications
+
+### Common Issues
+
+#### Missing Dependencies
+If you see errors about missing Python modules:
+```
+ModuleNotFoundError: No module named 'pydantic_core'
+```
+The application is designed to continue functioning with fallback mechanisms. However, you can try installing the specific dependencies:
+```bash
+pip install pydantic==1.10.8  # Use an older version compatible with more systems
+```
+
+#### Port Conflicts
+If you see errors about ports already in use:
+```
+Error: listen EADDRINUSE: address already in use :::5001
+```
+You can find and stop the process using that port:
+```bash
+# Find the process
+lsof -i :5001
+# Kill the process
+kill -9 <PID>
+```
 
 For persistent issues, please check the GitHub repository issues or contact the development team.
