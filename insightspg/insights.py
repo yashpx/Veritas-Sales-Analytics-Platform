@@ -44,12 +44,22 @@ def parse_json_output(output):
 
 def get_call_summary():
     """Runs call_summary.py and retrieves the output."""
-    output = run_script("call_summary")
-    result = parse_json_output(output)
-    # Extract the inner output if it exists
-    if isinstance(result, dict) and 'call_summary' in result:
-        return result['call_summary']['output']
-    return json.dumps(result)
+    try:
+        output = run_script("call_summary")
+        result = parse_json_output(output)
+        # Extract the inner output if it exists
+        if isinstance(result, dict) and 'call_summary' in result:
+            return result['call_summary']['output']
+        return result
+    except Exception as e:
+        print(f"Error in get_call_summary: {e}", file=sys.stderr)
+        # Return a placeholder when the module fails
+        return {
+            "summary": "Summary not available - Groq API module missing",
+            "rating": 0,
+            "strengths": ["Not available"],
+            "areas_for_improvement": ["Not available"]
+        }
 
 def get_custom_rag_analysis():
     """Runs custom_rag.py and retrieves the output."""
@@ -71,30 +81,37 @@ def get_profanity_check():
 
 def get_analysis():
     """Returns combined analysis results as JSON."""
-    try:
-        results = {
-            "call_summary": {
-                "output": get_call_summary()
-            },
-            "custom_rag_analysis": {
-                "output": get_custom_rag_analysis()
-            },
-            "buyer_intent": {
-                "output": get_buyer_intent()
-            },
-            "profanity_check": {
-                "output": get_profanity_check()
-            }
-        }
-        return results
-    except Exception as e:
-        print(f"Error in get_analysis: {e}", file=sys.stderr)
-        return {"error": str(e)}
+    # Get the transcript from the diarized-transcript.json file
+    transcript_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'diarized-transcript.json')
+    transcript = {}
+    if os.path.exists(transcript_path):
+        try:
+            with open(transcript_path, 'r') as f:
+                transcript = json.load(f)
+        except Exception as e:
+            print(f"Error loading transcript: {e}", file=sys.stderr)
+    
+    # Get analysis results from each module
+    call_summary = get_call_summary()
+    custom_rag = get_custom_rag_analysis()
+    buyer_intent = get_buyer_intent()
+    profanity = get_profanity_check()
+    
+    # Combine results
+    analysis = {
+        "call_summary": call_summary,
+        "custom_rag": custom_rag,
+        "buyer_intent": buyer_intent,
+        "profanity": profanity,
+        "transcript": transcript
+    }
+    
+    return analysis
 
 def main():
-    # Output the JSON directly to stdout
-    results = get_analysis()
-    print(json.dumps(results, indent=2))
+    """Main function to print the analysis as JSON."""
+    analysis = get_analysis()
+    print(json.dumps(analysis, indent=2))
 
 if __name__ == '__main__':
     main()

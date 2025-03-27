@@ -58,15 +58,15 @@ const formatInsightsForStorage = (insightsData) => {
     console.log('Formatting insights data from insights.py...');
     
     // Extract call summary data
-    const callSummary = JSON.parse(insightsData.call_summary.output || '{}');
+    const callSummary = JSON.parse(insightsData.call_summary || '{}');
     
-    // Handle potentially double-nested JSON in custom_rag_analysis
+    // Handle potentially double-nested JSON in custom_rag
     let ragAnalysis = {};
     try {
-      const ragData = JSON.parse(insightsData.custom_rag_analysis.output || '{}');
+      const ragData = JSON.parse(insightsData.custom_rag || '{}');
       // Check if there's a nested 'output' field
-      if (ragData.custom_rag_analysis && ragData.custom_rag_analysis.output) {
-        ragAnalysis = JSON.parse(ragData.custom_rag_analysis.output);
+      if (ragData.custom_rag && ragData.custom_rag.output) {
+        ragAnalysis = JSON.parse(ragData.custom_rag.output);
       } else {
         ragAnalysis = ragData;
       }
@@ -75,15 +75,15 @@ const formatInsightsForStorage = (insightsData) => {
     }
     
     // Extract buyer intent
-    const buyerIntent = JSON.parse(insightsData.buyer_intent.output || '{}');
+    const buyerIntent = JSON.parse(insightsData.buyer_intent || '{}');
     
-    // Handle potentially double-nested JSON in profanity_check
+    // Handle potentially double-nested JSON in profanity
     let profanityCheck = {};
     try {
-      const profanityData = JSON.parse(insightsData.profanity_check.output || '{}');
+      const profanityData = JSON.parse(insightsData.profanity || '{}');
       // Check if there's a nested 'output' field
-      if (profanityData.profanity_check && profanityData.profanity_check.output) {
-        profanityCheck = JSON.parse(profanityData.profanity_check.output);
+      if (profanityData.profanity && profanityData.profanity.output) {
+        profanityCheck = JSON.parse(profanityData.profanity.output);
       } else {
         profanityCheck = profanityData;
       }
@@ -98,10 +98,10 @@ const formatInsightsForStorage = (insightsData) => {
     const formattedData = {
       summary: callSummary.summary || 'No summary available',
       rating: callSummary.rating || 0,
-      strengths: callSummary.strengths ? callSummary.strengths.split('\n• ').filter(s => s) : [],
-      areas_for_improvement: callSummary.areas_for_improvement ? callSummary.areas_for_improvement.split('\n• ').filter(s => s) : [],
+      strengths: callSummary.strengths || [],
+      areas_for_improvement: callSummary.areas_for_improvement || [],
       buyer_intent: buyerIntent.nlp || 'Neutral',
-      profanity_level: profanityCheck["severity level"] || 'Clean',
+      profanity_level: profanityCheck["severity level"] || 'Clean ✅',
       topics: topics,
       raw_insights: insightsData // Store the full raw data
     };
@@ -133,7 +133,7 @@ const formatInsightsForStorage = (insightsData) => {
       strengths: [],
       areas_for_improvement: [],
       buyer_intent: 'Neutral',
-      profanity_level: 'Clean',
+      profanity_level: 'Clean ✅',
       topics: [],
       raw_insights: insightsData || {}
     };
@@ -166,7 +166,7 @@ const extractTopics = (summary, ragAnalysis) => {
 app.get('/api/output', (req, res) => {
   // Execute the Python script with the correct working directory
   const scriptPath = path.join(__dirname, 'insights.py');
-  exec('python3 ' + scriptPath, (error, stdout, stderr) => {
+  exec(`python3 ${scriptPath}`, (error, stdout, stderr) => {
     if (error) {
       console.error('Error executing insights.py:', error);
       console.error('Stderr:', stderr);
@@ -225,9 +225,9 @@ app.post('/api/call-insights/:callId', async (req, res) => {
     
     console.log(`Saved diarized transcript to ${diarizedTranscriptPath}`);
     
-    // 4. Execute insights.py
+    // 4. Execute insights.py with the system Python interpreter
     const scriptPath = path.join(__dirname, 'insights.py');
-    exec('python3 ' + scriptPath, (execError, stdout, stderr) => {
+    exec(`python3 ${scriptPath}`, (execError, stdout, stderr) => {
       if (execError) {
         console.error('Error executing insights.py:', execError);
         console.error('Stderr:', stderr);
@@ -247,9 +247,29 @@ app.post('/api/call-insights/:callId', async (req, res) => {
         // 6. Format insights for storage
         const formattedInsights = formatInsightsForStorage(insightsData);
         
-        // 7. Return insights without trying to save to database (we'll fix the database issue separately)
-        console.log(`Returning insights for call ID: ${callId} without saving to database`);
+        // 7. Return insights to the frontend
+        console.log(`Returning insights for call ID: ${callId}`);
         res.json(formattedInsights);
+
+        // 8. Also update the database with the insights
+        // Using a promise-based approach since we can't use await in this callback
+        supabase
+          .from('call_logs')
+          .update({
+            insights: formattedInsights,
+            processed_at: new Date().toISOString()
+          })
+          .eq('call_id', callId)
+          .then(({ data, error }) => {
+            if (error) {
+              console.error('Error saving insights to database:', error);
+            } else {
+              console.log(`Successfully saved insights to database for call ID: ${callId}`);
+            }
+          })
+          .catch(dbError => {
+            console.error('Exception saving insights to database:', dbError);
+          });
       } catch (parseError) {
         console.error('Error parsing insights output:', parseError);
         console.error('Raw output:', stdout.substring(0, 1000) + '...');
