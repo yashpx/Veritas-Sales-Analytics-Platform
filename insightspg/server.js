@@ -166,7 +166,7 @@ const extractTopics = (summary, ragAnalysis) => {
 app.get('/api/output', (req, res) => {
   // Execute the Python script with the correct working directory
   const scriptPath = path.join(__dirname, 'insights.py');
-  exec(`python3 ${scriptPath}`, (error, stdout, stderr) => {
+  exec(`python ${scriptPath}`, (error, stdout, stderr) => {
     if (error) {
       console.error('Error executing insights.py:', error);
       console.error('Stderr:', stderr);
@@ -227,7 +227,7 @@ app.post('/api/call-insights/:callId', async (req, res) => {
     
     // 4. Execute insights.py with the system Python interpreter
     const scriptPath = path.join(__dirname, 'insights.py');
-    exec(`python3 ${scriptPath}`, (execError, stdout, stderr) => {
+    exec(`python ${scriptPath}`, (execError, stdout, stderr) => {
       if (execError) {
         console.error('Error executing insights.py:', execError);
         console.error('Stderr:', stderr);
