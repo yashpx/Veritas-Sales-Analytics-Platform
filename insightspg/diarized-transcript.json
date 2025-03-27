@@ -8,7 +8,7 @@
     },
     {
       "speaker": "Speaker 1",
-      "text": "William: Yeah, that's me.",
+      "text": "Elijah: Yeah, that's me.",
       "start": 5,
       "end": 10
     },
@@ -20,7 +20,7 @@
     },
     {
       "speaker": "Speaker 1",
-      "text": "William: Pretty good. Who is this again?",
+      "text": "Elijah: Pretty good. Who is this again?",
       "start": 15,
       "end": 20
     },
@@ -50,7 +50,7 @@
     },
     {
       "speaker": "Speaker 1",
-      "text": "William: I guess so. What's this about?",
+      "text": "Elijah: I guess so. What's this about?",
       "start": 40,
       "end": 45
     },
@@ -80,7 +80,7 @@
     },
     {
       "speaker": "Speaker 1",
-      "text": "William: Honestly, we're still using spreadsheets. It's a bit messy.",
+      "text": "Elijah: Honestly, we're still using spreadsheets. It's a bit messy.",
       "start": 65,
       "end": 70
     },
@@ -122,7 +122,7 @@
     },
     {
       "speaker": "Speaker 1",
-      "text": "William: Yeah, I think it's worth a look.",
+      "text": "Elijah: Yeah, I think it's worth a look.",
       "start": 100,
       "end": 105
     },
@@ -140,13 +140,13 @@
     },
     {
       "speaker": "Speaker 1",
-      "text": "William: Thursday works.",
+      "text": "Elijah: Thursday works.",
       "start": 115,
       "end": 120
     },
     {
       "speaker": "Speaker 1",
-      "text": "William: Let's say 2 p.m.",
+      "text": "Elijah: Let's say 2 p.m.",
       "start": 120,
       "end": 125
     },
@@ -164,7 +164,7 @@
     },
     {
       "speaker": "Speaker 1",
-      "text": "William: Thanks.",
+      "text": "Elijah: Thanks.",
       "start": 135,
       "end": 140
     },
@@ -182,7 +182,7 @@
     },
     {
       "speaker": "Speaker 1",
-      "text": "William: Thank you.",
+      "text": "Elijah: Thank you.",
       "start": 150,
       "end": 155
     }

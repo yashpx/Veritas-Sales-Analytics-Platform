@@ -41,148 +41,96 @@ chmod +x start.sh
 ./start.sh
 ```
 
-These scripts will automatically:
-1. Install all required dependencies for both frontend and backend
-2. Set up the Python virtual environment
-3. Start the backend FastAPI server on port 5000
-4. Start the insights processing service on port 5001
-5. Launch the React frontend development server on port 3000
-6. Open the application in your default browser
+Once the application starts, open your browser and go to http://localhost:3000
 
-### Prerequisites
-Before running the startup script, ensure you have these installed:
-- Node.js (v14+)
-- npm
-- Python 3.8+
-- A modern web browser
+## Testing Guide for Professor
 
-### Access the Application
-Once the startup script has completed, you can access:
-- Main Application: http://localhost:3000
-- Backend API: http://localhost:5000
-- Insights API: http://localhost:5001
+### Step 1: Sign Up as a Sales Representative
+1. Click the "Sign Up" button on the login page
+2. Fill in your details:
+   - Email: (use your email)
+   - Password: (create a secure password)
+   - Role: Select "Sales Representative"
+3. Click "Sign Up"
 
-### Troubleshooting
+### Step 2: Testing Call Analysis Features
+1. After logging in, you'll see the main dashboard
+2. Click on "Call Analysis" in the sidebar
+3. To test the transcription and insights features:
+   - Click "Upload Call Recording"
+   - Navigate to the `audio_files` folder in the project
+   - Select "Call 1 Charlie Brown.m4a"
+   - Click "Upload"
+4. The system will:
+   - Transcribe the call with speaker identification
+   - Generate AI insights about the conversation
+   - Provide a detailed analysis of the call
 
-If you encounter any issues with the startup scripts:
+### Step 3: Viewing Call Insights
+1. Once the analysis is complete, you'll see:
+   - A transcript of the call with speaker labels
+   - Key insights and takeaways
+   - Call quality metrics
+   - Recommendations for improvement
+2. You can:
+   - Play the audio while following the transcript
+   - Review the AI-generated insights
+   - See the conversation quality score
 
-1. Check the console output for specific error messages
-2. Verify that all prerequisite software is installed
-3. Try manually starting each component following the instructions below
-4. Ensure that ports 3000, 5000, and 5001 are not already in use by other applications
+### Step 4: Testing Manager View
+1. Sign out of your sales representative account
+2. Create a new account:
+   - Click "Sign Up"
+   - Use a different email
+   - Select "Manager" as the role
+3. After logging in as a manager, you'll see:
+   - A dashboard with team performance metrics
+   - Access to all sales representatives' calls
+   - Team-wide analytics and insights
+4. You can:
+   - View all team members' calls
+   - Access individual performance metrics
+   - Generate team reports
 
-#### Common Issues
+### Key Features to Test
 
-##### Missing Dependencies
-If you see errors about missing Python modules:
-```
-ModuleNotFoundError: No module named 'pydantic_core'
-```
-The application is designed to continue functioning with fallback mechanisms. However, you can try installing the specific dependencies:
-```bash
-pip install pydantic==1.10.8  # Use an older version compatible with more systems
-```
+#### As a Sales Representative:
+- Call recording upload and analysis
+- Personal call history
+- Individual performance metrics
+- Call insights and recommendations
 
-##### Port Conflicts
-If you see errors about ports already in use:
+#### As a Manager:
+- Team performance dashboard
+- Individual rep performance tracking
+- Call quality monitoring
+- Team analytics and reporting
 
-For Windows:
-```powershell
-# Find the process
-netstat -ano | findstr :5001
-# Kill the process (replace PID with the actual process ID)
-taskkill /PID <PID> /F
-```
+## Troubleshooting
 
-For Linux/macOS:
-```bash
-# Find the process
-lsof -i :5001
-# Kill the process
-kill -9 <PID>
-```
+If you encounter any issues:
 
-### Manual Start Reference
-If the automated scripts don't work, you can manually start each component using these commands:
+1. Make sure all three services are running:
+   - Frontend (http://localhost:3000)
+   - Backend API (http://localhost:5000)
+   - Insights API (http://localhost:5001)
 
-![Run code reference](Run%20code.png)
+2. If you see any errors:
+   - Check the browser console for specific messages
+   - Ensure you're using a modern web browser
+   - Try refreshing the page
 
+3. For port conflicts:
+   - Windows: Use `netstat -ano | findstr :5001` to find and close conflicting processes
+   - Linux/macOS: Use `lsof -i :5001` to find and close conflicting processes
 
+## Need Help?
 
-### Prerequisites
-- Node.js (v14+)
-- npm or yarn
-- Python 3.8+
-- Supabase account
-- Groq API key (for transcription features)
-- Twilio account (for calling features)
-
-### Backend Setup
-
-1. Navigate to the backend directory:
-   ```
-   cd backend
-   ```
-
-2. Create a virtual environment:
-   ```
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
-
-3. Install dependencies:
-   ```
-   pip install -r requirements.txt
-   ```
-
-4. The `.env` file is already set up with your Supabase credentials.
-
-5. Start the backend server:
-   ```
-   uvicorn main:app --reload --port 5000
-   ```
-
-### Insights Processing Service Setup
-
-1. Navigate to the insightspg directory:
-   ```
-   cd insightspg
-   ```
-
-2. Install Node dependencies:
-   ```
-   npm install
-   ```
-
-3. Make the startup script executable:
-   ```
-   node server.js
-   ```
-
-
-This service runs on port 5001 and processes call transcriptions to generate insights.
-
-### Frontend Setup
-
-1. Navigate to the frontend directory:
-   ```
-   cd frontend
-   ```
-
-2. Install dependencies:
-   ```
-   npm install
-   ```
-
-3. Start the development server:
-   ```
-   npm start
-   ```
-
-4. Open your browser and navigate to `http://localhost:3000`
-
-
-
+If you encounter any issues or need assistance:
+1. Check the browser console for error messages
+2. Ensure all services are running properly
+3. Try refreshing the page
+4. Contact the development team for support
 
 ## Features
 
