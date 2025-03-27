@@ -151,13 +151,9 @@ If the automated scripts don't work, you can manually start each component using
 
 3. Make the startup script executable:
    ```
-   chmod +x start_insightspg.sh
+   node server.js
    ```
 
-4. Start the insights service:
-   ```
-   ./start_insightspg.sh
-   ```
 
 This service runs on port 5001 and processes call transcriptions to generate insights.
 
@@ -173,36 +169,14 @@ This service runs on port 5001 and processes call transcriptions to generate ins
    npm install
    ```
 
-3. Create a `.env` file based on `.env.example` with your credentials:
-   ```
-   REACT_APP_SUPABASE_URL=your_supabase_url
-   REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
-   REACT_APP_GROQ_API_KEY=your_groq_api_key
-   REACT_APP_TWILIO_ACCOUNT_SID=your_twilio_account_sid
-   REACT_APP_TWILIO_AUTH_TOKEN=your_twilio_auth_token
-   REACT_APP_INSIGHTS_API_URL=http://localhost:5001
-   ```
-
-4. Start the development server:
+3. Start the development server:
    ```
    npm start
    ```
 
-5. Open your browser and navigate to `http://localhost:3000`
+4. Open your browser and navigate to `http://localhost:3000`
 
-## Supabase Setup
 
-1. Create a new Supabase project
-2. Set up the following tables:
-   - users (handled by Supabase Auth)
-   - call_logs
-   - call_transcriptions
-   - call_insights
-   - customers
-   - sales_reps
-   - sales_data
-3. Enable Row Level Security (RLS) policies
-4. Set up authentication providers as needed
 
 
 ## Features
